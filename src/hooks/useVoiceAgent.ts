@@ -10,6 +10,8 @@ interface Options {
 }
 
 const AGENT_URL = "wss://agents.assemblyai.com/v1/ws";
+/** Close the agent session after this long without an alert; it reconnects on the next alert. */
+const IDLE_DISCONNECT_MS = 90_000;
 const SYSTEM_PROMPT =
   "You are Surgr, the operating room safety alert voice. You are not a conversational assistant. You never greet, never ask questions and never add commentary. When you receive instructions to speak an alert, say the alert text exactly, word for word, in a calm, clear and urgent tone, then stop. If you hear audio without instructions, stay silent.";
 
@@ -32,6 +34,7 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
   const replyWaiters = useRef<{ onStarted: () => void; onDone: () => void } | null>(null);
   const enabledRef = useRef(enabled);
   const hasKeyRef = useRef(hasKey);
+  const idleTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     enabledRef.current = enabled;
@@ -52,9 +55,17 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
     }
   }, []);
 
+  const clearIdleTimer = useCallback(() => {
+    if (idleTimerRef.current !== null) {
+      window.clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = null;
+    }
+  }, []);
+
   /** Tears the socket down without touching React state (safe inside effects). */
   const closeSocket = useCallback(() => {
     stopKeepalive();
+    clearIdleTimer();
     const ws = wsRef.current;
     wsRef.current = null;
     readyRef.current = null;
@@ -69,12 +80,28 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
       ws?.close();
     }
     replyWaiters.current?.onDone();
-  }, [stopKeepalive]);
+  }, [stopKeepalive, clearIdleTimer]);
 
   const disconnect = useCallback(() => {
     closeSocket();
     setStatus("idle");
   }, [closeSocket]);
+
+  /** (Re)arms the idle disconnect. Called on connect and after every spoken alert. */
+  const touchIdle = useCallback(() => {
+    clearIdleTimer();
+    function arm() {
+      idleTimerRef.current = window.setTimeout(() => {
+        idleTimerRef.current = null;
+        if (busyRef.current || queueRef.current.length > 0) {
+          arm();
+          return;
+        }
+        disconnect();
+      }, IDLE_DISCONNECT_MS);
+    }
+    arm();
+  }, [clearIdleTimer, disconnect]);
 
   const handleMessage = useCallback(
     (raw: string) => {
@@ -171,6 +198,7 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
         if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "input.audio", audio: silence }));
       }, 100);
       setStatus("ready");
+      touchIdle();
       return ws;
     })();
     attempt.catch((e: unknown) => {
@@ -182,7 +210,7 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
     });
     readyRef.current = attempt;
     return attempt;
-  }, [handleMessage, stopKeepalive]);
+  }, [handleMessage, stopKeepalive, touchIdle]);
 
   const fallbackSpeak = useCallback(
     (text: string) =>
@@ -256,8 +284,9 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
       });
       await getPlayer().drained();
       setStatus((s) => (s === "speaking" ? "ready" : s));
+      touchIdle();
     },
-    [connect, fallbackSpeak, getPlayer],
+    [connect, fallbackSpeak, getPlayer, touchIdle],
   );
 
   const drain = useCallback(async () => {
@@ -294,6 +323,15 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
       closeSocket();
     }
   }, [enabled, closeSocket]);
+
+  // A hidden tab should not keep a billable agent session open; it reconnects on the next alert.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden" && !busyRef.current) disconnect();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [disconnect]);
 
   useEffect(
     () => () => {

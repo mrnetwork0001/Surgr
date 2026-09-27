@@ -42,6 +42,10 @@ Gateway model access is per account. Surgr asks for Claude first and falls back 
 3. Trigger *Dose mismatch*, *No read-back*, *Rushed Time Out* or *No Time Out at all* and hear Surgr **speak the alert** into the room.
 4. Click **Export EHR report** for the structured record with timestamp links back into the transcript, JSON download and print view.
 
+Recording or demoing alone? Turn on **Solo demo** in the header. With one voice playing every role, speaker labels put the order and its read-back on the same speaker, which Surgr would otherwise flag as a self-read-back; solo mode accepts it and notes the setting in the report.
+
+The Voice Agent session is opened when a session or scenario starts, closed after 90 seconds without an alert or when the tab is hidden, and reopened on the next alert, so idle tabs do not hold a billable session.
+
 ## How it works
 
 ```
