@@ -117,9 +117,10 @@ export function buildLocalReport(state: SurgrState, now = Date.now()): Operative
       confirmed_orders: confirmed.length,
       closed_loop_rate: rate,
       mean_readback_latency_ms: meanLatency,
-      notes: total
-        ? `${confirmed.length} of ${total} verbal orders were closed; ${firstTry} on the first read-back. ${state.alerts.length} safety alert${state.alerts.length === 1 ? "" : "s"} raised.`
-        : "No verbal medication orders were captured.",
+      notes:
+        (total
+          ? `${confirmed.length} of ${total} verbal orders were closed; ${firstTry} on the first read-back. ${state.alerts.length} safety alert${state.alerts.length === 1 ? "" : "s"} raised.`
+          : "No verbal medication orders were captured.") + (state.soloMode ? " Solo demo mode was on: read-backs from the ordering speaker were accepted." : ""),
     },
     recommendations,
   };

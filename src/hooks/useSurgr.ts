@@ -275,6 +275,7 @@ export function useSurgr() {
   }, [clearSimTimers, stt]);
 
   const assignRole = useCallback((label: string, role: Role) => dispatch({ type: "assign_role", label, role }), []);
+  const setSoloMode = useCallback((value: boolean) => dispatch({ type: "set_solo", value }), []);
   const ackAlert = useCallback((id: string) => dispatch({ type: "ack_alert", id }), []);
   const ackAllAlerts = useCallback(() => {
     for (const a of stateRef.current.alerts) if (!a.acknowledged) dispatch({ type: "ack_alert", id: a.id });
@@ -349,6 +350,8 @@ export function useSurgr() {
     stopLive,
     reset,
     assignRole,
+    soloMode: state.soloMode,
+    setSoloMode,
     ackAlert,
     ackAllAlerts,
     unacknowledged,

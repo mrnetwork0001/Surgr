@@ -133,6 +133,8 @@ export interface SurgrState {
   phase: Phase | null;
   phaseHistory: PhaseRecord[];
   sessionStartedAt: number | null;
+  /** One voice plays every role: read-backs from the ordering speaker are accepted. */
+  soloMode: boolean;
 }
 
 export interface OperativeReport {

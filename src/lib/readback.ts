@@ -26,6 +26,7 @@ export type SurgrEvent =
   | { type: "tick"; now: number }
   | { type: "assign_role"; label: string; role: Role }
   | { type: "ack_alert"; id: string }
+  | { type: "set_solo"; value: boolean }
   | { type: "reset" };
 
 export function createInitialState(): SurgrState {
@@ -38,6 +39,7 @@ export function createInitialState(): SurgrState {
     phase: null,
     phaseHistory: [],
     sessionStartedAt: null,
+    soloMode: false,
   };
 }
 
@@ -156,7 +158,7 @@ function applyReadBack(
   if (!candidate) return { state, applied: false };
 
   const label = turn.speakerLabel;
-  if (isRealLabel(label) && label === candidate.orderedBy && candidate.status === "pending") {
+  if (!state.soloMode && isRealLabel(label) && label === candidate.orderedBy && candidate.status === "pending") {
     const s = addAlert(state, {
       type: "self_readback",
       severity: "warning",
@@ -329,7 +331,10 @@ function applyClassification(state: SurgrState, turn: TranscriptTurn, c: Classif
 export function reduce(state: SurgrState, event: SurgrEvent): SurgrState {
   switch (event.type) {
     case "reset":
-      return createInitialState();
+      return { ...createInitialState(), soloMode: state.soloMode };
+
+    case "set_solo":
+      return state.soloMode === event.value ? state : { ...state, soloMode: event.value };
 
     case "session_start":
       if (state.sessionStartedAt) return state;

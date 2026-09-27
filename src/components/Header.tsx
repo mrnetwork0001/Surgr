@@ -75,9 +75,13 @@ export default function Header({ surgr }: { surgr: Surgr }) {
           <input type="checkbox" checked={surgr.voiceEnabled} onChange={(e) => surgr.setVoiceEnabled(e.target.checked)} />
           <span>Voice</span>
         </label>
-        <label className="toggle" title="Use Claude via LLM Gateway for ambiguous turns">
+        <label className="toggle" title="Use the LLM Gateway for ambiguous turns">
           <input type="checkbox" checked={surgr.llmEnabled} onChange={(e) => surgr.setLlmEnabled(e.target.checked)} />
           <span>LLM</span>
+        </label>
+        <label className="toggle" title="One voice plays every role: a read-back from the same speaker who gave the order is accepted instead of flagged">
+          <input type="checkbox" checked={surgr.soloMode} onChange={(e) => surgr.setSoloMode(e.target.checked)} />
+          <span>Solo demo</span>
         </label>
         {live ? (
           <button className="btn btn-danger" onClick={surgr.stopLive}>
