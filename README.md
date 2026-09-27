@@ -66,6 +66,7 @@ Nothing in the room beeps when a read-back does not happen. Surgr is the thing t
 - **Speaker-aware.** Speaker labels distinguish surgeon, anesthesiologist and nurse on one microphone, so a read-back from the person who gave the order is caught.
 - **WHO checklist, hands-free.** 21 items across Sign In, Time Out and Sign Out tick off from speech. A phase that ends with items skipped, or an incision called without a Time Out, raises an alert.
 - **Spoken alerts.** Nobody in an operating room is watching a screen. Alerts are spoken into the room within about a second through AssemblyAI's Voice Agent, then logged.
+- **Ask Surgr.** The same agent listens to the room and answers questions addressed to it ("Surgr, what is still open?") from live state through JSON-schema tools, staying silent for everything else.
 - **Audit-ready record.** Closed-loop rate, mean read-back time, every medication with order and read-back timestamps, checklist compliance per phase, safety events with resolutions, and recommendations. Exportable as PDF, JSON and print; deliverable by Telegram, email or the device share sheet; and Surgr can read the debrief aloud.
 - **Degrades gracefully.** The rules engine, checklist, simulator and local report run without any cloud call. The voice falls back to browser speech synthesis. The LLM is budget-aware and never blocks the safety loop.
 
@@ -110,7 +111,7 @@ The simulator injects scripted text into exactly this pipeline after the speech-
 | Who is speaking | Streaming speaker labels | `speaker_labels=true`, `max_speakers=4`; true diarization on a single microphone |
 | Ambiguous utterances | LLM Gateway, `https://llm-gateway.assemblyai.com/v1/chat/completions` | JSON-schema outputs; native `response_format` when the account's model supports it, prompt-embedded schema otherwise; rate budget read from `x-ratelimit-*` headers |
 | Report narrative | LLM Gateway | Procedure summary, communication notes, per-order notes, recommendations; facts and timestamps always come from Surgr's own state |
-| Spoken alerts and debrief | Voice Agent API, `wss://agents.assemblyai.com/v1/ws` | Inline `session.update`, speech driven with `reply.create`; session closes after 90 s idle or when the tab is hidden and reconnects on demand |
+| Spoken alerts, questions and debrief | Voice Agent API, `wss://agents.assemblyai.com/v1/ws` | Inline `session.update` with six client-side tools; alerts via `reply.create`; continuous 24 kHz room audio during live sessions with silent-reply suppression; session closes after 90 s idle when not listening and reconnects on demand |
 | Browser auth | Temporary tokens | `GET /v3/token` and `GET agents.assemblyai.com/v1/token`, minted server-side |
 
 Every integration has been verified against the live services with the scripts in [Verification](#verification). Model access on the gateway is per account: Surgr asks for Claude first and falls back to `qwen3.5-4b-32k-fast`, which every account can use.
@@ -164,6 +165,8 @@ Without a key, the simulator, rules engine, checklist and local report all work 
 **Live microphone.** Click **Start live session**, allow the microphone, and speak. Roles are assigned automatically: the first speaker to give an order becomes Surgeon, the first to read back becomes Anesthesiologist. Fix them from the chips if needed.
 
 **Solo demo.** With one voice playing every role, speaker labels put the order and its read-back on the same speaker, which Surgr correctly flags as a self-read-back. Turning on **Solo demo** accepts those read-backs; the setting survives Reset and is noted in the report.
+
+**Ask Surgr.** During a live session the Voice Agent listens to the room continuously at real-time pace. Anything not addressed to Surgr is answered with the single word "silent" and discarded before it can play; say its name and it answers from live state through JSON-schema client tools: open orders, the last order, checklist status, a session summary, recent alerts, and acknowledging alerts. Try "Surgr, what is still open?" or "Surgr, how is the checklist going?". The **Ask Surgr** button in the header nudges the agent to answer if the name was not recognised, and the card at the bottom right shows what it heard and what it said. Questions to Surgr are kept out of the safety pipeline, so mentioning a drug in a question never opens an order.
 
 **No second person?** Play `public/audio/rehearsal-two-voices.m4a` (also served at `/audio/rehearsal-two-voices.m4a`) from a phone held near the laptop microphone. It is a 78-second scripted exchange in three synthesized voices covering a correct read-back, a dose mismatch with correction, a ten-second timeout and a rushed Time Out. Do not play it from the laptop itself: the browser's echo cancellation suppresses audio the same machine produces.
 
