@@ -31,7 +31,7 @@ export default function Header({ surgr }: { surgr: Surgr }) {
     <header className="header">
       <Link href="/" className="brand" title="Back to the Surgr home page">
         <div className="brand-mark" aria-hidden>
-          <span />
+          <span className="brand-glyph">S</span>
         </div>
         <div>
           <div className="brand-name">Surgr</div>

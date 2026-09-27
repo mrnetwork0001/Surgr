@@ -1,6 +1,7 @@
 "use client";
 import { useSurgr } from "@/hooks/useSurgr";
 import AlertBanner from "./AlertBanner";
+import ORBackdrop from "./landing/ORBackdrop";
 import ChecklistPanel from "./ChecklistPanel";
 import Header from "./Header";
 import OrderBoard from "./OrderBoard";
@@ -14,6 +15,9 @@ export default function Cockpit() {
 
   return (
     <div className="cockpit">
+      <div className="cockpit-backdrop" aria-hidden>
+        <ORBackdrop variant="cockpit" intensity={0.6} />
+      </div>
       <Header surgr={surgr} />
       <AlertBanner alerts={surgr.unacknowledged} onAck={surgr.ackAlert} onAckAll={surgr.ackAllAlerts} voiceStatus={surgr.voice.status} />
       <main className="main">
