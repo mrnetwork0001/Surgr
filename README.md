@@ -4,7 +4,7 @@ Surgr listens to the operating room, tells the surgeon from the anesthesiologist
 
 Built for the [AssemblyAI Voice Agent Hackathon](https://lablab.ai/ai-hackathons/assemblyai-voice-agent-hackathon) on lablab.ai.
 
-![Surgr cockpit flagging a read-back dose mismatch](public/screenshots/cockpit-alert.png)
+![Surgr cockpit flagging a read-back dose mismatch](public/screenshots/cockpit-v2.png)
 
 ## AssemblyAI stack
 
