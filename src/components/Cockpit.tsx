@@ -48,7 +48,17 @@ export default function Cockpit() {
         onInject={surgr.injectLine}
       />
       {surgr.report && (
-        <ReportModal result={surgr.report} onClose={surgr.closeReport} onJump={surgr.jumpToTurn} onRetry={surgr.generateReport} retrying={surgr.reportLoading} />
+        <ReportModal
+          result={surgr.report}
+          onClose={surgr.closeReport}
+          onJump={surgr.jumpToTurn}
+          onRetry={surgr.generateReport}
+          retrying={surgr.reportLoading}
+          caps={surgr.caps}
+          speaking={surgr.voice.status === "speaking" || surgr.voice.status === "fallback" || surgr.voice.status === "connecting"}
+          onSpeak={surgr.speakText}
+          onStopSpeaking={surgr.stopSpeaking}
+        />
       )}
     </div>
   );

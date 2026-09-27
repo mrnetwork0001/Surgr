@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ReportResult } from "@/hooks/useSurgr";
+import DeliverBar, { type ShareCaps } from "./DeliverBar";
 import { phaseLabel } from "@/lib/checklist";
 import { ROLE_LABEL } from "@/lib/readback";
 import { formatMs } from "@/lib/report";
@@ -12,6 +13,10 @@ interface Props {
   onJump: (turnId: string) => void;
   onRetry: () => void;
   retrying: boolean;
+  caps: ShareCaps;
+  speaking: boolean;
+  onSpeak: (text: string) => void;
+  onStopSpeaking: () => void;
 }
 
 function useCountdown(seconds: number | undefined): number {
@@ -25,7 +30,7 @@ function useCountdown(seconds: number | undefined): number {
   return seconds ? left : 0;
 }
 
-export default function ReportModal({ result, onClose, onJump, onRetry, retrying }: Props) {
+export default function ReportModal({ result, onClose, onJump, onRetry, retrying, caps, speaking, onSpeak, onStopSpeaking }: Props) {
   const r = result.report;
   const retryIn = useCountdown(result.retryAfterSec);
   useEffect(() => {
@@ -90,6 +95,8 @@ export default function ReportModal({ result, onClose, onJump, onRetry, retrying
             </button>
           </div>
         </div>
+
+        <DeliverBar report={r} caps={caps} speaking={speaking} onSpeak={onSpeak} onStopSpeaking={onStopSpeaking} />
 
         <div className="report-grid">
           <div className="report-stat">

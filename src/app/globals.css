@@ -1175,6 +1175,74 @@ h3 {
   margin-top: 4px;
 }
 
+.deliver {
+  margin: 4px 0 18px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.06);
+}
+
+.deliver-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.deliver-label {
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-size: 18px;
+  margin-right: 4px;
+}
+
+.deliver-email {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.deliver-email input {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: var(--text);
+  min-width: 220px;
+}
+
+.deliver-email input:disabled {
+  opacity: 0.5;
+}
+
+.deliver-note {
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.deliver-note a {
+  color: var(--accent);
+}
+
+.deliver-warn {
+  color: var(--warn);
+}
+
+@media (max-width: 760px) {
+  .deliver-email {
+    margin-left: 0;
+    width: 100%;
+  }
+  .deliver-email input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
 .report section {
   margin-top: 18px;
 }
@@ -1416,7 +1484,8 @@ h3 {
     max-height: none;
     width: 100%;
   }
-  .modal-actions {
+  .modal-actions,
+  .deliver {
     display: none;
   }
   .link {

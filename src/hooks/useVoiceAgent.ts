@@ -278,7 +278,7 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
         ws.send(
           JSON.stringify({
             type: "reply.create",
-            instructions: `Speak this safety alert verbatim, exactly as written, and nothing else: "${text}"`,
+            instructions: `Speak the following text verbatim, exactly as written, and nothing else: "${text}"`,
           }),
         );
       });
@@ -311,6 +311,16 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
     [drain],
   );
 
+  /** Cuts any speech immediately: drops the queue, ends the agent reply and flushes scheduled audio. */
+  const stop = useCallback(() => {
+    queueRef.current = [];
+    closeSocket();
+    playerRef.current?.close();
+    playerRef.current = null;
+    if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
+    setStatus("idle");
+  }, [closeSocket]);
+
   /** Call from a user gesture: unlocks audio playback and pre-connects the agent. */
   const warmUp = useCallback(() => {
     getPlayer().unlock();
@@ -342,5 +352,5 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
     [closeSocket],
   );
 
-  return { status: enabled ? status : ("idle" as VoiceStatus), lastSpoken, error, speak, warmUp, disconnect };
+  return { status: enabled ? status : ("idle" as VoiceStatus), lastSpoken, error, speak, stop, warmUp, disconnect };
 }

@@ -53,6 +53,7 @@ export function useSurgr() {
   }, [state]);
 
   const [hasKey, setHasKey] = useState<boolean | null>(null);
+  const [caps, setCaps] = useState<{ telegram: boolean; email: boolean }>({ telegram: false, email: false });
   const [llmEnabled, setLlmEnabled] = useState(true);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [llmInFlight, setLlmInFlight] = useState(0);
@@ -69,8 +70,10 @@ export function useSurgr() {
     let cancelled = false;
     fetch("/api/health", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d: { hasKey?: boolean }) => {
-        if (!cancelled) setHasKey(!!d.hasKey);
+      .then((d: { hasKey?: boolean; telegram?: boolean; email?: boolean }) => {
+        if (cancelled) return;
+        setHasKey(!!d.hasKey);
+        setCaps({ telegram: !!d.telegram, email: !!d.email });
       })
       .catch(() => {
         if (!cancelled) setHasKey(false);
@@ -87,6 +90,13 @@ export function useSurgr() {
 
   const voice = useVoiceAgent({ enabled: voiceEnabled, hasKey: !!hasKey });
   const { speak, warmUp } = voice;
+  const speakText = useCallback(
+    (text: string) => {
+      warmUp();
+      speak(text);
+    },
+    [speak, warmUp],
+  );
 
   // ---- Classification pipeline: rules first (instant), LLM Gateway for ambiguous turns ----
   const classify = useCallback(
@@ -345,6 +355,9 @@ export function useSurgr() {
     voiceEnabled,
     setVoiceEnabled,
     voice,
+    caps,
+    speakText,
+    stopSpeaking: voice.stop,
     stt,
     startLive,
     stopLive,
