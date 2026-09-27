@@ -1,9 +1,7 @@
 "use client";
-import Link from "next/link";
 import type { ReactNode } from "react";
 import BlurText from "./BlurText";
 import FadingVideo from "./FadingVideo";
-import { GITHUB_URL, HACKATHON_URL } from "./Hero";
 import { ClipboardIcon, ShieldCheckIcon, WaveIcon } from "./Icons";
 import ORBackdrop from "./ORBackdrop";
 
@@ -74,25 +72,6 @@ export default function Capabilities({ image }: { image?: string }) {
           ))}
         </div>
 
-        <div className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 font-body text-xs text-white/60 md:flex-row md:items-center md:justify-between">
-          <p className="max-w-2xl">
-            Surgr is a hackathon prototype built for the AssemblyAI Voice Agent Hackathon on lablab.ai. It is not a medical device and does not replace clinical judgement or institutional safety protocols.
-          </p>
-          <div className="flex flex-wrap gap-5">
-            <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-white">
-              GitHub
-            </a>
-            <a href="https://www.assemblyai.com" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-white">
-              AssemblyAI
-            </a>
-            <a href={HACKATHON_URL} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-white">
-              Hackathon
-            </a>
-            <Link href="/app" className="transition-colors hover:text-white">
-              Launch app
-            </Link>
-          </div>
-        </div>
       </div>
     </section>
   );
