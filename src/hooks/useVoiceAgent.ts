@@ -30,6 +30,15 @@ const SILENT_REPLY = /^\s*[\[("']?\s*silent\b/i;
 /** The agent's own transcription of the name; used to surface heard questions on the card. */
 const WAKE_HEARD = /\b(?:surgr|surger|sergr|surgur|sirgr|sergei|sergey|sergio|surgeur)\b/i;
 
+const norm = (t: string) => t.toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+/** True when `text` begins like the last alert (first five words), i.e. the agent is reading an alert, not answering. */
+function looksLikeAlert(text: string, alert: string): boolean {
+  if (!alert) return false;
+  const a = norm(alert).split(" ").slice(0, 5).join(" ");
+  const t = norm(text).split(" ").slice(0, 5).join(" ");
+  return a.length > 0 && (t.startsWith(a) || a.startsWith(t) && t.split(" ").length >= 3);
+}
+
 const SYSTEM_PROMPT = [
   "You are Surgr, the operating room's closed-loop safety copilot. You listen to the whole room continuously. You have exactly two jobs.",
   "1. When you receive instructions to announce an alert, speak the given text exactly, word for word, in a calm, clear, urgent tone, then stop.",
@@ -69,6 +78,8 @@ export function useVoiceAgent({ enabled, hasKey, tools }: Options) {
   const touchIdleRef = useRef<(() => void) | null>(null);
   /** Audio of the current reply, held until its first words show whether the agent is answering or staying silent. */
   const replyAudioRef = useRef<{ decided: boolean; play: boolean; chunks: Int16Array[] }>({ decided: false, play: false, chunks: [] });
+  /** The alert most recently requested with reply.create, so a late agent rendition is never mistaken for an answer. */
+  const lastAlertRef = useRef<{ text: string; spokenByFallback: boolean }>({ text: "", spokenByFallback: false });
   const [suppressedReplies, setSuppressedReplies] = useState(0);
 
   useEffect(() => {
@@ -224,10 +235,11 @@ export function useVoiceAgent({ enabled, hasKey, tools }: Options) {
           const first = m.delta.trim();
           if (!first) break;
           r.decided = true;
-          r.play = !SILENT_REPLY.test(first);
+          const alertRendition = looksLikeAlert(first, lastAlertRef.current.text);
+          r.play = !SILENT_REPLY.test(first) && !(alertRendition && lastAlertRef.current.spokenByFallback);
           if (r.play) {
             setStatus("speaking");
-            setAskState("answering");
+            if (!alertRendition) setAskState("answering");
             for (const c of r.chunks) getPlayer().enqueue(c);
           } else {
             setSuppressedReplies((n) => n + 1);
@@ -245,13 +257,14 @@ export function useVoiceAgent({ enabled, hasKey, tools }: Options) {
           if (typeof m.text !== "string") break;
           const a = m.text;
           const r = replyAudioRef.current;
+          const isAlertText = looksLikeAlert(a, lastAlertRef.current.text);
           if (!r.decided) {
             // No deltas arrived for this reply; decide on the full text.
             r.decided = true;
-            r.play = !SILENT_REPLY.test(a);
+            r.play = !SILENT_REPLY.test(a) && !(isAlertText && lastAlertRef.current.spokenByFallback);
             if (r.play) {
               setStatus("speaking");
-              setAskState("answering");
+              if (!isAlertText) setAskState("answering");
               for (const c of r.chunks) getPlayer().enqueue(c);
             } else {
               setSuppressedReplies((n) => n + 1);
@@ -260,7 +273,7 @@ export function useVoiceAgent({ enabled, hasKey, tools }: Options) {
           }
           if (r.play) {
             setLastSpoken(a);
-            if (!replyWaiters.current) setExchange((prev) => ({ question: prev?.question, answer: a, at: Date.now() }));
+            if (!replyWaiters.current && !isAlertText) setExchange((prev) => ({ question: prev?.question, answer: a, at: Date.now() }));
           }
           break;
         }
@@ -415,6 +428,7 @@ export function useVoiceAgent({ enabled, hasKey, tools }: Options) {
         await new Promise((r) => setTimeout(r, 250));
       }
 
+      lastAlertRef.current = { text, spokenByFallback: false };
       await new Promise<void>((resolve) => {
         let started = false;
         let startTimer = 0;
@@ -428,8 +442,9 @@ export function useVoiceAgent({ enabled, hasKey, tools }: Options) {
         startTimer = window.setTimeout(() => {
           if (started) return;
           replyWaiters.current = null;
+          lastAlertRef.current = { text, spokenByFallback: true };
           void fallbackSpeak(text).then(resolve);
-        }, 3500);
+        }, 6000);
         doneTimer = window.setTimeout(finish, 20000);
         replyWaiters.current = {
           onStarted: () => {
