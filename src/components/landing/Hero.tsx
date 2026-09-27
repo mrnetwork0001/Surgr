@@ -13,11 +13,11 @@ export const HACKATHON_URL = "https://lablab.ai/ai-hackathons/assemblyai-voice-a
 /** Set to the recorded demo once it exists; the "Watch the demo" link is hidden until then. */
 const DEMO_VIDEO_URL = "";
 
-const NAV_LINKS: { label: string; href: string; external?: boolean }[] = [
+const NAV_LINKS: { label: string; href: string }[] = [
   { label: "Capabilities", href: "#capabilities" },
-  { label: "Cockpit", href: "/app" },
-  { label: "GitHub", href: GITHUB_URL, external: true },
-  { label: "Hackathon", href: HACKATHON_URL, external: true },
+  { label: "How it works", href: "#how" },
+  { label: "Product", href: "#product" },
+  { label: "Scenarios", href: "#scenarios" },
 ];
 
 const blurIn = (delay: number) => ({
@@ -48,37 +48,20 @@ export default function Hero({ image }: { image?: string }) {
           <Link href="/" aria-label="Surgr home" className="liquid-glass flex h-12 w-12 items-center justify-center rounded-full font-heading text-2xl italic text-white">
             S
           </Link>
-          <div className="liquid-glass hidden items-center rounded-full px-1.5 py-1.5 md:flex">
-            {NAV_LINKS.map((l) =>
-              l.external ? (
-                <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" className="px-3 py-2 font-body text-sm font-medium text-white/90 transition-colors hover:text-white">
-                  {l.label}
-                </a>
-              ) : (
-                <Link key={l.label} href={l.href} className="px-3 py-2 font-body text-sm font-medium text-white/90 transition-colors hover:text-white">
-                  {l.label}
-                </Link>
-              ),
-            )}
-            <Link href="/app" className="ml-1 flex items-center gap-1.5 rounded-full bg-white px-4 py-2 font-body text-sm font-medium text-black transition-transform hover:scale-[1.03] active:scale-[0.97]">
-              Launch app <ArrowUpRight width={14} height={14} />
-            </Link>
-          </div>
-          <Link href="/app" className="liquid-glass flex h-12 items-center rounded-full px-4 font-body text-sm font-medium text-white md:invisible md:w-12 md:px-0">
-            Launch
-          </Link>
+          <nav className="liquid-glass hidden items-center rounded-full px-1.5 py-1.5 md:flex" aria-label="Sections">
+            {NAV_LINKS.map((l) => (
+              <a key={l.href} href={l.href} className="px-3 py-2 font-body text-sm font-medium text-white/90 transition-colors hover:text-white">
+                {l.label}
+              </a>
+            ))}
+          </nav>
         </header>
 
         <div className="flex flex-1 flex-col items-center justify-center px-4 pt-24 text-center">
-          <motion.div {...blurIn(0.4)} className="liquid-glass flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-4">
-            <span className="rounded-full bg-white px-2 py-0.5 font-body text-[11px] font-medium text-black">New</span>
-            <span className="font-body text-xs text-white/90 md:text-sm">Built for the AssemblyAI Voice Agent Hackathon 2026</span>
-          </motion.div>
-
           <BlurText
             as="h1"
             text="Every Verbal Order in the OR, Verified Out Loud"
-            className="mt-6 max-w-3xl font-heading text-6xl italic leading-[0.8] tracking-[-4px] text-white md:text-7xl lg:text-[5.5rem]"
+            className="max-w-3xl font-heading text-6xl italic leading-[0.8] tracking-[-4px] text-white md:text-7xl lg:text-[5.5rem]"
           />
 
           <motion.p {...blurIn(0.8)} className="mt-4 max-w-2xl font-body text-sm font-light leading-tight text-white md:text-base">
