@@ -119,7 +119,7 @@ export function Product() {
         <Reveal>
           <div className="liquid-glass rounded-[1.5rem] p-2">
             <Image
-              src="/screenshots/cockpit-v2.png"
+              src="/screenshots/cockpit-v3.png"
               alt="Surgr cockpit with a live transcript by role, a fentanyl order flagged as a dose mismatch, and the WHO checklist"
               width={1600}
               height={1000}
