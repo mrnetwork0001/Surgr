@@ -1,6 +1,7 @@
 "use client";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import BlurText from "./BlurText";
 import FadingVideo from "./FadingVideo";
 import ORBackdrop from "./ORBackdrop";
@@ -27,6 +28,17 @@ const blurIn = (delay: number) => ({
 });
 
 export default function Hero({ image }: { image?: string }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
   return (
     <section className="relative h-screen overflow-hidden bg-black">
       {HERO_VIDEO ? (
@@ -55,7 +67,68 @@ export default function Hero({ image }: { image?: string }) {
               </a>
             ))}
           </nav>
+          <button
+            type="button"
+            className="liquid-glass flex h-12 w-12 flex-col items-center justify-center gap-[5px] rounded-full md:hidden"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            <span className={`block h-[1.5px] w-5 rounded-full bg-white transition-transform duration-200 ${menuOpen ? "translate-y-[6.5px] rotate-45" : ""}`} />
+            <span className={`block h-[1.5px] w-5 rounded-full bg-white transition-opacity duration-200 ${menuOpen ? "opacity-0" : ""}`} />
+            <span className={`block h-[1.5px] w-5 rounded-full bg-white transition-transform duration-200 ${menuOpen ? "-translate-y-[6.5px] -rotate-45" : ""}`} />
+          </button>
         </header>
+
+        <AnimatePresence>
+          {menuOpen && (
+            <>
+              <motion.div
+                key="menu-backdrop"
+                className="fixed inset-0 z-40 bg-black/50 md:hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setMenuOpen(false)}
+                aria-hidden
+              />
+              <motion.nav
+                key="menu"
+                id="mobile-menu"
+                aria-label="Sections"
+                className="liquid-glass-strong fixed left-4 right-4 top-20 z-50 rounded-[1.5rem] p-6 md:hidden"
+                initial={{ filter: "blur(10px)", opacity: 0, y: -12 }}
+                animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
+                exit={{ filter: "blur(8px)", opacity: 0, y: -8 }}
+                transition={{ duration: 0.28, ease: "easeOut" }}
+              >
+                <ul className="flex flex-col">
+                  {NAV_LINKS.map((l) => (
+                    <li key={l.href}>
+                      <a
+                        href={l.href}
+                        onClick={() => setMenuOpen(false)}
+                        className="block border-b border-white/10 py-3.5 font-heading text-3xl italic leading-none text-white"
+                      >
+                        {l.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-5 flex items-center gap-4">
+                  <Link href="/app" className="flex items-center gap-2 rounded-full bg-white px-5 py-2.5 font-body text-sm font-medium text-black">
+                    Launch app <ArrowUpRight width={14} height={14} />
+                  </Link>
+                  <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="font-body text-sm font-medium text-white/80">
+                    Source on GitHub
+                  </a>
+                </div>
+              </motion.nav>
+            </>
+          )}
+        </AnimatePresence>
 
         <div className="flex flex-1 flex-col items-center justify-center px-4 pt-24 text-center">
           <BlurText
