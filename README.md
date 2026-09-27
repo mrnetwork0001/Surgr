@@ -4,6 +4,8 @@ Surgr listens to the operating room, tells the surgeon from the anesthesiologist
 
 Built for the [AssemblyAI Voice Agent Hackathon](https://lablab.ai/ai-hackathons/assemblyai-voice-agent-hackathon) on lablab.ai.
 
+![Surgr cockpit flagging a read-back dose mismatch](public/screenshots/cockpit-alert.png)
+
 ## AssemblyAI stack
 
 | Surgr layer | AssemblyAI product |
@@ -23,7 +25,9 @@ cp .env.example .env.local   # then paste your key into ASSEMBLYAI_API_KEY
 npm run dev
 ```
 
-Open http://localhost:3000. Use Chrome or Edge for the live microphone.
+Open http://localhost:3000 for the landing page and http://localhost:3000/app for the cockpit. Use Chrome or Edge for the live microphone.
+
+The landing page draws its own operating-room ambience on a canvas (surgical lamp, dust motes, sweeping ECG and pulse-ox traces), so it needs no media assets. To layer photography underneath, add `public/backdrops/hero.jpg` and `public/backdrops/capabilities.jpg` (16:9, dark); they are picked up automatically with a slow Ken Burns drift. To use video instead, set `HERO_VIDEO` / `CAPABILITIES_VIDEO` in the landing components to an MP4 URL.
 
 Without a key the simulator, rule-based read-back engine, checklist and local report all still work; the voice falls back to the browser's speech synthesis.
 
@@ -61,6 +65,7 @@ Browser mic ──PCM16 16 kHz──▶ AssemblyAI Streaming v3 (medical mode, s
 - `src/hooks/useStreaming.ts` — mic → AudioWorklet → AssemblyAI WebSocket.
 - `src/hooks/useVoiceAgent.ts` — Voice Agent session used as the room loudspeaker, with speech-synthesis fallback.
 - `src/app/api/*` — token minting, LLM Gateway classification and report enrichment.
+- `src/components/landing/*` — Hero and Capabilities sections (Framer Motion blur-in, word-by-word `BlurText`, fading background video, liquid-glass UI).
 
 Run the scenario regression without a browser:
 
