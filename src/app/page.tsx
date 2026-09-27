@@ -3,7 +3,7 @@ import Link from "next/link";
 import LandingDemo from "@/components/landing/LandingDemo";
 import styles from "./landing.module.css";
 
-const GITHUB_URL = "https://github.com/mrnetwork0001/surgr";
+const GITHUB_URL = "https://github.com/mrnetwork0001/Surgr";
 
 const STATS = [
   {
