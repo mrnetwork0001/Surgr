@@ -150,7 +150,7 @@ export function Product() {
 /* ---------------- Stack ---------------- */
 
 const STACK = [
-  { name: "Streaming STT v3", tag: "universal-3-6-pro · medical-v1", body: "Sub-second transcripts from the room microphone. Medical mode formats drug names and doses; keyterms boost 48 operating-room drugs and checklist phrases." },
+  { name: "Streaming STT v3", tag: "universal-3-6-pro · medical-v1", body: "Sub-second transcripts from the room microphone. Medical mode formats drug names and doses; keyterms boost 47 operating-room drugs and checklist phrases." },
   { name: "Speaker labels", tag: "true diarization", body: "One microphone, three roles. Speaker embeddings separate the team in real time, so a read-back from the wrong person is caught." },
   { name: "LLM Gateway", tag: "JSON-schema outputs", body: "Structured classification for the utterances rules cannot settle, and the narrative sections of the operative record. Rate budget tracked from the gateway's headers." },
   { name: "Voice Agent API", tag: "reply.create", body: "Surgr's voice in the room. Alerts are spoken verbatim through a persistent agent session, with browser speech as a fallback." },
