@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Surgr } from "@/hooks/useSurgr";
@@ -51,15 +52,7 @@ export default function MobileDrawer({ surgr, open, onClose }: Props) {
             transition={{ duration: 0.26, ease: "easeOut" }}
           >
             <div className="drawer-head">
-              <div className="brand">
-                <div className="brand-mark" aria-hidden>
-                  <span className="brand-glyph">S</span>
-                </div>
-                <div>
-                  <div className="brand-name">Surgr</div>
-                  <div className="brand-tag">OR safety copilot</div>
-                </div>
-              </div>
+              <Image src="/brand/surgr-header.png" alt="Surgr" width={1086} height={362} className="brand-logo brand-logo-drawer" />
               <button type="button" className="drawer-close" onClick={onClose} aria-label="Close menu">
                 ×
               </button>

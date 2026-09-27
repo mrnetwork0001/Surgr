@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import BlurText from "./BlurText";
@@ -57,8 +58,8 @@ export default function Hero({ image }: { image?: string }) {
 
       <div className="relative z-10 flex h-full flex-col">
         <header className="fixed top-4 left-0 right-0 z-50 flex items-center justify-between px-8 lg:px-16">
-          <Link href="/" aria-label="Surgr home" className="liquid-glass flex h-12 w-12 items-center justify-center rounded-full font-heading text-2xl italic text-white">
-            S
+          <Link href="/" aria-label="Surgr home" className="liquid-glass flex h-12 items-center rounded-full px-4">
+            <Image src="/brand/surgr-header.png" alt="Surgr" width={1086} height={362} priority className="h-10 w-auto" />
           </Link>
           <nav className="liquid-glass hidden items-center rounded-full px-1.5 py-1.5 md:flex" aria-label="Sections">
             {NAV_LINKS.map((l) => (

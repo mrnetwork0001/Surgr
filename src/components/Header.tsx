@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useNow } from "@/hooks/useNow";
 import type { Surgr } from "@/hooks/useSurgr";
@@ -139,13 +140,8 @@ export default function Header({ surgr }: { surgr: Surgr }) {
   return (
     <header className="header">
       <Link href="/" className="brand" title="Back to the Surgr home page">
-        <div className="brand-mark" aria-hidden>
-          <span className="brand-glyph">S</span>
-        </div>
-        <div>
-          <div className="brand-name">Surgr</div>
-          <div className="brand-tag">Operating room closed-loop safety copilot</div>
-        </div>
+        <Image src="/brand/surgr-header.png" alt="Surgr" width={1086} height={362} priority className="brand-logo" />
+        <div className="brand-tag">Operating room closed-loop safety copilot</div>
       </Link>
 
       <div className="status-row" role="status">

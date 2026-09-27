@@ -294,10 +294,9 @@ export function SiteFooter() {
     <footer className="relative border-t border-white/10 bg-black px-8 pb-16 pt-16 md:px-16 lg:px-20">
       <div className="grid gap-12 md:grid-cols-[1.5fr_1fr_1fr] lg:gap-16">
         <div>
-          <div className="flex items-center gap-3">
-            <span className="liquid-glass flex h-10 w-10 items-center justify-center rounded-full font-heading text-xl italic text-white">S</span>
-            <span className="font-heading text-4xl italic leading-none tracking-[-1px] text-white">Surgr</span>
-          </div>
+          <Link href="/" aria-label="Surgr home" className="inline-flex">
+            <Image src="/brand/surgr-header.png" alt="Surgr" width={1086} height={362} className="h-14 w-auto" />
+          </Link>
           <p className="mt-6 max-w-md font-body text-base font-light leading-relaxed text-white/75">
             A closed-loop safety layer for the operating room. Every verbal drug order is checked against its read-back, the WHO checklist ticks itself from speech, and Surgr speaks up the moment a loop does not close, then writes the audit record.
           </p>
