@@ -1,10 +1,13 @@
 "use client";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { CHECKLIST_BY_ID, itemsForPhase, phaseLabel } from "@/lib/checklist";
 import { ruleClassify } from "@/lib/classifier";
+import { formatDose } from "@/lib/drugs";
+import { ROLE_LABEL } from "@/lib/readback";
 import { createInitialState, reduce } from "@/lib/readback";
 import { buildLocalReport } from "@/lib/report";
 import { SIM_SPEAKERS, findScenario, type SimSpeaker } from "@/lib/scenarios";
-import type { Classification, OperativeReport, Role, TranscriptTurn } from "@/lib/types";
+import type { Classification, OperativeReport, Phase, Role, TranscriptTurn } from "@/lib/types";
 import { useStreaming } from "./useStreaming";
 import { useVoiceAgent } from "./useVoiceAgent";
 
@@ -22,6 +25,8 @@ export interface ReportResult {
 }
 
 const SIM_TURN_BASE = 100_000;
+/** "Surgr" as speech-to-text tends to hear it. "surgeon" is deliberately excluded. */
+const WAKE_WORD = /\b(?:surgr|surger|sergr|surgur|sirgr|sergei|sergey|surgeur)\b/i;
 /** After a gateway 429 without a retry-after hint, skip LLM calls for this long. */
 const LLM_BACKOFF_MS = 30_000;
 
@@ -88,8 +93,79 @@ export function useSurgr() {
     return () => window.clearInterval(t);
   }, []);
 
-  const voice = useVoiceAgent({ enabled: voiceEnabled, hasKey: !!hasKey });
-  const { speak, warmUp } = voice;
+  // ---- Tools the Voice Agent can call to answer "Surgr, ..." questions, from live state ----
+  const answerTool = useCallback((name: string, args: Record<string, unknown>): unknown => {
+    const s = stateRef.current;
+    const now = Date.now();
+    const describeOrder = (o: (typeof s.orders)[number]) => ({
+      drug: o.drug,
+      dose: formatDose(o.dose, o.unit),
+      route: o.route ?? "not stated",
+      status: o.status,
+      ordered_by: ROLE_LABEL[o.orderedByRole],
+      seconds_since_order: Math.round((now - o.orderedAt) / 1000),
+      read_back: o.readBack ? { by: ROLE_LABEL[o.readBack.role], text: o.readBack.text, mismatch_on: o.readBack.reasons } : null,
+    });
+    switch (name) {
+      case "get_open_orders": {
+        const open = s.orders.filter((o) => o.status !== "confirmed").map(describeOrder);
+        return { count: open.length, open, note: open.length === 0 ? "Every verbal order has been confirmed by a correct read-back." : undefined };
+      }
+      case "get_last_order": {
+        const last = s.orders[s.orders.length - 1];
+        return last ? describeOrder(last) : { note: "No verbal medication orders have been given yet." };
+      }
+      case "get_checklist_status": {
+        const phase = (typeof args.phase === "string" ? (args.phase as Phase) : s.phase) ?? null;
+        if (!phase) {
+          const done = Object.values(s.checklist).filter((c) => c.done).length;
+          return { current_phase: null, note: `No checklist phase is active. ${done} of 21 items have been confirmed so far.` };
+        }
+        const items = itemsForPhase(phase);
+        return {
+          phase: phaseLabel(phase),
+          is_current: s.phase === phase,
+          confirmed: items.filter((i) => s.checklist[i.id]?.done).map((i) => i.label),
+          missing: items.filter((i) => !s.checklist[i.id]?.done).map((i) => i.label),
+        };
+      }
+      case "get_session_summary": {
+        const confirmed = s.orders.filter((o) => o.status === "confirmed").length;
+        return {
+          elapsed_seconds: s.sessionStartedAt ? Math.round((now - s.sessionStartedAt) / 1000) : 0,
+          orders_total: s.orders.length,
+          orders_confirmed: confirmed,
+          closed_loop_rate_percent: s.orders.length ? Math.round((confirmed / s.orders.length) * 100) : null,
+          alerts_total: s.alerts.length,
+          unacknowledged_alerts: s.alerts.filter((a) => !a.acknowledged).length,
+          current_phase: s.phase ? phaseLabel(s.phase) : null,
+          checklist_items_confirmed: Object.values(s.checklist).filter((c) => c.done).length,
+        };
+      }
+      case "get_recent_alerts": {
+        const limit = typeof args.limit === "number" ? Math.max(1, Math.min(5, args.limit)) : 3;
+        return {
+          alerts: s.alerts
+            .slice(-limit)
+            .reverse()
+            .map((a) => {
+              const order = a.orderId ? s.orders.find((o) => o.id === a.orderId) : undefined;
+              return { type: a.type, title: a.title, seconds_ago: Math.round((now - a.at) / 1000), resolved: order ? order.status === "confirmed" : a.acknowledged, acknowledged: a.acknowledged };
+            }),
+        };
+      }
+      case "acknowledge_alerts": {
+        const pending = s.alerts.filter((a) => !a.acknowledged);
+        for (const a of pending) dispatch({ type: "ack_alert", id: a.id });
+        return { acknowledged: pending.length };
+      }
+      default:
+        return { error: `unknown tool ${name}`, known_items: Object.keys(CHECKLIST_BY_ID).length };
+    }
+  }, []);
+
+  const voice = useVoiceAgent({ enabled: voiceEnabled, hasKey: !!hasKey, tools: answerTool });
+  const { speak, warmUp, feedAudio, setListening, noteQuestion } = voice;
   const speakText = useCallback(
     (text: string) => {
       warmUp();
@@ -161,16 +237,33 @@ export function useSurgr() {
     [llmEnabled, hasKey],
   );
 
+  const wakeTriggered = useRef(new Set<string>());
   const handleTurn = useCallback(
     (turn: TranscriptTurn) => {
       dispatch({ type: "turn", turn });
+      // A question addressed to Surgr is surfaced on the card and kept out of the safety pipeline; the agent hears it directly.
+      if (turn.source === "live" && WAKE_WORD.test(turn.text)) {
+        if (!wakeTriggered.current.has(turn.id)) {
+          wakeTriggered.current.add(turn.id);
+          noteQuestion(turn.text);
+        }
+        if (turn.isFinal) {
+          dispatch({ type: "classified", turnId: turn.id, classification: { kind: "other", confidence: 1, by: "rules", summary: "Question to Surgr" }, now: Date.now() });
+        }
+        return;
+      }
       if (turn.isFinal && turn.text.trim()) void classify(turn);
     },
-    [classify],
+    [classify, noteQuestion],
   );
 
   const sessionStart = useCallback(() => dispatch({ type: "session_start", now: Date.now() }), []);
-  const stt = useStreaming({ onTurn: handleTurn, onSessionStart: sessionStart });
+  const stt = useStreaming({ onTurn: handleTurn, onSessionStart: sessionStart, onAudio: feedAudio });
+
+  // The agent listens to the room for the whole live session and stops with it.
+  useEffect(() => {
+    setListening(stt.status === "listening" && voiceEnabled && !!hasKey);
+  }, [stt.status, voiceEnabled, hasKey, setListening]);
 
   // ---- Voice alerts ----
   const spokenRef = useRef(new Set<string>());
@@ -358,6 +451,12 @@ export function useSurgr() {
     caps,
     speakText,
     stopSpeaking: voice.stop,
+    ask: voice.ask,
+    askExchange: voice.exchange,
+    suppressedReplies: voice.suppressedReplies,
+    startAsk: voice.startAsk,
+    stopAsk: voice.stopAsk,
+    clearAsk: voice.clearExchange,
     stt,
     startLive,
     stopLive,

@@ -1,6 +1,7 @@
 "use client";
 import { useSurgr } from "@/hooks/useSurgr";
 import AlertBanner from "./AlertBanner";
+import AskCard from "./AskCard";
 import ORBackdrop from "./landing/ORBackdrop";
 import ChecklistPanel from "./ChecklistPanel";
 import Header from "./Header";
@@ -47,6 +48,7 @@ export default function Cockpit() {
         onStop={surgr.stopScenario}
         onInject={surgr.injectLine}
       />
+      <AskCard surgr={surgr} />
       {surgr.report && (
         <ReportModal
           result={surgr.report}

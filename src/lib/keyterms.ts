@@ -2,6 +2,7 @@ import { DRUGS } from "./drugs";
 
 /** Keyterms boost recognition of drug names and checklist phrases (max 100 terms, 50 chars each). */
 export const KEYTERMS: string[] = [
+  "Surgr",
   ...DRUGS.map((d) => d.name),
   "milligrams",
   "micrograms",

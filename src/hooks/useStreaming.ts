@@ -20,6 +20,8 @@ interface StreamingTurnMessage {
 interface Options {
   onTurn: (turn: TranscriptTurn) => void;
   onSessionStart?: () => void;
+  /** Receives every 50 ms chunk of 16 kHz PCM16 microphone audio (for the Voice Agent gate). */
+  onAudio?: (chunk: ArrayBuffer) => void;
 }
 
 const STREAMING_URL = "wss://streaming.assemblyai.com/v3/ws";
@@ -31,7 +33,7 @@ const FORMAT_GRACE_MS = 1500;
  * speaker labels, keyterms). The API key stays on the server; the browser uses a
  * short-lived token from /api/token.
  */
-export function useStreaming({ onTurn, onSessionStart }: Options) {
+export function useStreaming({ onTurn, onSessionStart, onAudio }: Options) {
   const [status, setStatus] = useState<SttStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [level, setLevel] = useState(0);
@@ -43,6 +45,7 @@ export function useStreaming({ onTurn, onSessionStart }: Options) {
   const nodeRef = useRef<AudioWorkletNode | null>(null);
   const onTurnRef = useRef(onTurn);
   const onStartRef = useRef(onSessionStart);
+  const onAudioRef = useRef(onAudio);
   const graceTimers = useRef(new Map<number, number>());
   const finalized = useRef(new Set<number>());
 
@@ -52,6 +55,9 @@ export function useStreaming({ onTurn, onSessionStart }: Options) {
   useEffect(() => {
     onStartRef.current = onSessionStart;
   }, [onSessionStart]);
+  useEffect(() => {
+    onAudioRef.current = onAudio;
+  }, [onAudio]);
 
   const teardownAudio = useCallback(() => {
     for (const t of graceTimers.current.values()) window.clearTimeout(t);
@@ -229,6 +235,7 @@ export function useStreaming({ onTurn, onSessionStart }: Options) {
         const d = e.data;
         if (d?.type === "audio" && d.buffer) {
           if (socket.readyState === WebSocket.OPEN) socket.send(d.buffer);
+          onAudioRef.current?.(d.buffer);
         } else if (d?.type === "level" && typeof d.rms === "number") {
           const rms = d.rms;
           setLevel((prev) => (Math.abs(prev - rms) > 0.005 ? rms : prev));

@@ -89,3 +89,23 @@ export class PCMPlayer {
     this.nextTime = 0;
   }
 }
+
+/** Linear 16 kHz -> 24 kHz upsampler for speech chunks; keeps the last sample so chunk edges stay continuous. */
+export class Upsampler16to24 {
+  private last = 0;
+  convert(input: Int16Array): Int16Array {
+    const n = input.length;
+    const out = new Int16Array(Math.round(n * 1.5));
+    if (n === 0) return out;
+    for (let i = 0; i < out.length; i++) {
+      const pos = (i * 2) / 3 - 1; // position relative to the previous chunk's last sample
+      const k = Math.floor(pos);
+      const frac = pos - k;
+      const s0 = k < 0 ? this.last : input[Math.min(n - 1, k)];
+      const s1 = input[Math.min(n - 1, k + 1)];
+      out[i] = Math.round(s0 + (s1 - s0) * frac);
+    }
+    this.last = input[n - 1];
+    return out;
+  }
+}

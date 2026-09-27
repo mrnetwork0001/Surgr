@@ -111,6 +111,14 @@ export function SessionActions({ surgr, onDone }: { surgr: Surgr; onDone?: () =>
           Start live session
         </button>
       )}
+      <button
+        className={`btn ${surgr.ask !== "idle" ? "btn-ask-active" : ""}`}
+        onClick={() => (surgr.ask === "idle" ? void surgr.startAsk() : surgr.stopAsk())}
+        disabled={!live || !surgr.voiceEnabled || !surgr.hasKey}
+        title={!live ? "Start a live session first, then press this or say “Surgr, …”" : "Ask Surgr about the case: open orders, checklist, alerts"}
+      >
+        {surgr.ask === "listening" ? "Listening…" : surgr.ask === "answering" ? "Answering…" : "Ask Surgr"}
+      </button>
       <button className="btn" onClick={wrap(surgr.generateReport)} disabled={surgr.reportLoading || state.turns.length === 0}>
         {surgr.reportLoading ? "Generating…" : "Export EHR report"}
       </button>

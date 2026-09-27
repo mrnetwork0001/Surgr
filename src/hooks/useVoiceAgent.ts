@@ -1,40 +1,75 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PCMPlayer, base64ToInt16, silenceBase64 } from "@/lib/audio";
+import { PCMPlayer, Upsampler16to24, base64ToInt16, bytesToBase64, silenceBase64 } from "@/lib/audio";
+import { SURGR_TOOLS } from "@/lib/agentTools";
 
 export type VoiceStatus = "idle" | "connecting" | "ready" | "speaking" | "fallback" | "error";
+export type AskState = "idle" | "listening" | "answering";
+export type ToolHandler = (name: string, args: Record<string, unknown>) => unknown;
+
+export interface AskExchange {
+  question?: string;
+  answer?: string;
+  at: number;
+}
 
 interface Options {
   enabled: boolean;
   hasKey: boolean;
+  /** Answers the agent's tool calls from live application state. */
+  tools?: ToolHandler;
 }
 
 const AGENT_URL = "wss://agents.assemblyai.com/v1/ws";
-/** Close the agent session after this long without an alert; it reconnects on the next alert. */
+/** The agent accepts 24 kHz PCM only; microphone chunks arrive at 16 kHz from the streaming worklet and are upsampled. */
+const INPUT_SAMPLE_RATE = 24000;
+/** Close the agent session after this long without an alert or question; it reconnects on demand. */
 const IDLE_DISCONNECT_MS = 90_000;
-const SYSTEM_PROMPT =
-  "You are Surgr, the operating room safety alert voice. You are not a conversational assistant. You never greet, never ask questions and never add commentary. When you receive instructions to speak an alert, say the alert text exactly, word for word, in a calm, clear and urgent tone, then stop. If you hear audio without instructions, stay silent.";
+/** A reply whose first words match this is the agent staying quiet; its audio is never played. */
+const SILENT_REPLY = /^\s*[\[("']?\s*silent\b/i;
+/** The agent's own transcription of the name; used to surface heard questions on the card. */
+const WAKE_HEARD = /\b(?:surgr|surger|sergr|surgur|sirgr|sergei|sergey|sergio|surgeur)\b/i;
+
+const SYSTEM_PROMPT = [
+  "You are Surgr, the operating room's closed-loop safety copilot. You listen to the whole room continuously. You have exactly two jobs.",
+  "1. When you receive instructions to announce an alert, speak the given text exactly, word for word, in a calm, clear, urgent tone, then stop.",
+  "2. When a team member addresses you by name and asks about the current case, call a tool, then answer in one or two short sentences. Never invent orders, doses, times or checklist states. Say doses in words, for example 'one hundred micrograms fentanyl'. If a tool returns nothing relevant, say so plainly.",
+  "Your name is Surgr, pronounced 'surger'; transcription may render it as Sergei, Sergey, Sergio, Surger or Surgeon at the start of a sentence. Treat those as your name only when the sentence is clearly addressed to you.",
+  "SILENCE RULE: most of what you hear is the surgical team talking to each other: drug orders, read-backs, checklist statements, instrument requests. None of that is addressed to you. For any utterance that does not address you by name, your entire reply must be the single word: silent. No punctuation, no other words. Never greet, never acknowledge, never comment.",
+].join(" ");
 
 /**
- * AssemblyAI Voice Agent session used as the OR loudspeaker. Surgr never sends the
- * room audio to it; it only asks the agent to speak alerts via `reply.create`.
- * Falls back to the browser's speechSynthesis when the agent is unavailable.
+ * AssemblyAI Voice Agent session used as the OR loudspeaker and as an assistant that can be
+ * asked about the case. Surgr streams room audio to it only while a question gate is open.
+ * Falls back to the browser's speechSynthesis for alerts when the agent is unavailable.
  */
-export function useVoiceAgent({ enabled, hasKey }: Options) {
+export function useVoiceAgent({ enabled, hasKey, tools }: Options) {
   const [status, setStatus] = useState<VoiceStatus>("idle");
   const [lastSpoken, setLastSpoken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [ask, setAsk] = useState<AskState>("idle");
+  const [exchange, setExchange] = useState<AskExchange | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const readyRef = useRef<Promise<WebSocket> | null>(null);
   const playerRef = useRef<PCMPlayer | null>(null);
   const keepaliveRef = useRef<number | null>(null);
+  const idleTimerRef = useRef<number | null>(null);
   const queueRef = useRef<string[]>([]);
   const busyRef = useRef(false);
   const replyWaiters = useRef<{ onStarted: () => void; onDone: () => void } | null>(null);
   const enabledRef = useRef(enabled);
   const hasKeyRef = useRef(hasKey);
-  const idleTimerRef = useRef<number | null>(null);
+  const toolsRef = useRef<ToolHandler | undefined>(tools);
+  const listeningRef = useRef(false);
+  const askRef = useRef<AskState>("idle");
+  const upsamplerRef = useRef(new Upsampler16to24());
+  const replyInFlightRef = useRef(false);
+  const pendingToolResults = useRef<string[]>([]);
+  const touchIdleRef = useRef<(() => void) | null>(null);
+  /** Audio of the current reply, held until its first words show whether the agent is answering or staying silent. */
+  const replyAudioRef = useRef<{ decided: boolean; play: boolean; chunks: Int16Array[] }>({ decided: false, play: false, chunks: [] });
+  const [suppressedReplies, setSuppressedReplies] = useState(0);
 
   useEffect(() => {
     enabledRef.current = enabled;
@@ -42,6 +77,9 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
   useEffect(() => {
     hasKeyRef.current = hasKey;
   }, [hasKey]);
+  useEffect(() => {
+    toolsRef.current = tools;
+  }, [tools]);
 
   const getPlayer = useCallback(() => {
     if (!playerRef.current) playerRef.current = new PCMPlayer(24000);
@@ -62,10 +100,18 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
     }
   }, []);
 
+  const setAskState = useCallback((s: AskState) => {
+    askRef.current = s;
+    setAsk(s);
+  }, []);
+
   /** Tears the socket down without touching React state (safe inside effects). */
   const closeSocket = useCallback(() => {
     stopKeepalive();
     clearIdleTimer();
+    replyInFlightRef.current = false;
+    replyAudioRef.current = { decided: false, play: false, chunks: [] };
+    pendingToolResults.current = [];
     const ws = wsRef.current;
     wsRef.current = null;
     readyRef.current = null;
@@ -85,15 +131,16 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
   const disconnect = useCallback(() => {
     closeSocket();
     setStatus("idle");
-  }, [closeSocket]);
+    setAskState("idle");
+  }, [closeSocket, setAskState]);
 
-  /** (Re)arms the idle disconnect. Called on connect and after every spoken alert. */
+  /** (Re)arms the idle disconnect. Called on connect and after every spoken alert or answer. */
   const touchIdle = useCallback(() => {
     clearIdleTimer();
     function arm() {
       idleTimerRef.current = window.setTimeout(() => {
         idleTimerRef.current = null;
-        if (busyRef.current || queueRef.current.length > 0) {
+        if (busyRef.current || queueRef.current.length > 0 || listeningRef.current || askRef.current !== "idle") {
           arm();
           return;
         }
@@ -102,6 +149,46 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
     }
     arm();
   }, [clearIdleTimer, disconnect]);
+  useEffect(() => {
+    touchIdleRef.current = touchIdle;
+  }, [touchIdle]);
+
+  const sendJson = useCallback((msg: Record<string, unknown>) => {
+    const ws = wsRef.current;
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+  }, []);
+
+  const flushToolResults = useCallback(() => {
+    for (const r of pendingToolResults.current) sendJson({ type: "tool.result", ...JSON.parse(r) });
+    pendingToolResults.current = [];
+  }, [sendJson]);
+
+  const handleToolCall = useCallback(
+    (callId: string, name: string, args: Record<string, unknown>) => {
+      let result: unknown;
+      let isError = false;
+      try {
+        result = toolsRef.current ? toolsRef.current(name, args) : { error: "no tools available" };
+      } catch (e) {
+        isError = true;
+        result = { error: e instanceof Error ? e.message : String(e) };
+      }
+      const payload = JSON.stringify({ call_id: callId, result: JSON.stringify(result ?? null), is_error: isError });
+      if (replyInFlightRef.current) {
+        pendingToolResults.current.push(payload);
+        // Never hold a result for long; the agent apologises and moves on if it times out.
+        window.setTimeout(() => {
+          if (pendingToolResults.current.includes(payload)) {
+            pendingToolResults.current = pendingToolResults.current.filter((p) => p !== payload);
+            sendJson({ type: "tool.result", ...JSON.parse(payload) });
+          }
+        }, 1500);
+      } else {
+        sendJson({ type: "tool.result", ...JSON.parse(payload) });
+      }
+    },
+    [sendJson],
+  );
 
   const handleMessage = useCallback(
     (raw: string) => {
@@ -112,18 +199,87 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
         return;
       }
       switch (m.type) {
-        case "reply.started":
-          setStatus("speaking");
-          replyWaiters.current?.onStarted();
+        case "reply.started": {
+          replyInFlightRef.current = true;
+          // Alerts we requested play immediately; agent-initiated replies are held until their first words are known.
+          const isAlert = !!replyWaiters.current;
+          replyAudioRef.current = { decided: isAlert, play: isAlert, chunks: [] };
+          if (isAlert) {
+            setStatus("speaking");
+            replyWaiters.current?.onStarted();
+          }
           break;
-        case "reply.audio":
-          if (typeof m.data === "string") getPlayer().enqueue(base64ToInt16(m.data));
+        }
+        case "reply.audio": {
+          if (typeof m.data !== "string") break;
+          const pcm = base64ToInt16(m.data);
+          const r = replyAudioRef.current;
+          if (!r.decided) r.chunks.push(pcm);
+          else if (r.play) getPlayer().enqueue(pcm);
           break;
-        case "transcript.agent":
-          if (typeof m.text === "string") setLastSpoken(m.text);
+        }
+        case "transcript.agent.delta": {
+          const r = replyAudioRef.current;
+          if (r.decided || typeof m.delta !== "string") break;
+          const first = m.delta.trim();
+          if (!first) break;
+          r.decided = true;
+          r.play = !SILENT_REPLY.test(first);
+          if (r.play) {
+            setStatus("speaking");
+            setAskState("answering");
+            for (const c of r.chunks) getPlayer().enqueue(c);
+          } else {
+            setSuppressedReplies((n) => n + 1);
+          }
+          r.chunks = [];
           break;
+        }
+        case "transcript.user":
+          if (typeof m.text === "string" && (askRef.current !== "idle" || WAKE_HEARD.test(m.text))) {
+            const q = m.text;
+            setExchange((prev) => ({ question: q, answer: prev && prev.question === q ? prev.answer : undefined, at: Date.now() }));
+          }
+          break;
+        case "transcript.agent": {
+          if (typeof m.text !== "string") break;
+          const a = m.text;
+          const r = replyAudioRef.current;
+          if (!r.decided) {
+            // No deltas arrived for this reply; decide on the full text.
+            r.decided = true;
+            r.play = !SILENT_REPLY.test(a);
+            if (r.play) {
+              setStatus("speaking");
+              setAskState("answering");
+              for (const c of r.chunks) getPlayer().enqueue(c);
+            } else {
+              setSuppressedReplies((n) => n + 1);
+            }
+            r.chunks = [];
+          }
+          if (r.play) {
+            setLastSpoken(a);
+            if (!replyWaiters.current) setExchange((prev) => ({ question: prev?.question, answer: a, at: Date.now() }));
+          }
+          break;
+        }
         case "reply.done":
-          replyWaiters.current?.onDone();
+          replyInFlightRef.current = false;
+          flushToolResults();
+          if (replyWaiters.current) {
+            replyWaiters.current.onDone();
+          } else {
+            setAskState("idle");
+            setStatus((s) => (s === "speaking" ? "ready" : s));
+            touchIdleRef.current?.();
+          }
+          replyAudioRef.current = { decided: false, play: false, chunks: [] };
+          break;
+        case "tool.call":
+          if (typeof m.call_id === "string" && typeof m.name === "string") {
+            handleToolCall(m.call_id, m.name, (m.arguments as Record<string, unknown>) ?? {});
+          }
           break;
         case "session.error":
         case "error":
@@ -134,7 +290,7 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
           break;
       }
     },
-    [getPlayer],
+    [getPlayer, setAskState, flushToolResults, handleToolCall],
   );
 
   const connect = useCallback((): Promise<WebSocket> => {
@@ -174,8 +330,9 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
           type: "session.update",
           session: {
             system_prompt: SYSTEM_PROMPT,
-            input: { format: { encoding: "audio/pcm" } },
+            input: { format: { encoding: "audio/pcm", sample_rate: INPUT_SAMPLE_RATE } },
             output: { voice: data.voiceId ?? "george", format: { encoding: "audio/pcm" }, volume: 100 },
+            tools: SURGR_TOOLS,
           },
         }),
       );
@@ -191,11 +348,12 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
         stopKeepalive();
         replyWaiters.current?.onDone();
         setStatus("idle");
+        setAskState("idle");
       };
-      // Stream silence at real-time pace so the session behaves like an open call.
-      const silence = silenceBase64(100, 24000);
+      // Stream silence at real-time pace so the session behaves like an open call, except while the room is being forwarded.
+      const silence = silenceBase64(100, INPUT_SAMPLE_RATE);
       keepaliveRef.current = window.setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "input.audio", audio: silence }));
+        if (!listeningRef.current && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "input.audio", audio: silence }));
       }, 100);
       setStatus("ready");
       touchIdle();
@@ -210,7 +368,7 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
     });
     readyRef.current = attempt;
     return attempt;
-  }, [handleMessage, stopKeepalive, touchIdle]);
+  }, [handleMessage, stopKeepalive, setAskState, touchIdle]);
 
   const fallbackSpeak = useCallback(
     (text: string) =>
@@ -252,6 +410,11 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
       }
       if (ws.readyState !== WebSocket.OPEN) return fallbackSpeak(text);
 
+      // A question to Surgr in progress finishes first; the alert follows immediately after.
+      for (let waited = 0; askRef.current !== "idle" && waited < 8000; waited += 250) {
+        await new Promise((r) => setTimeout(r, 250));
+      }
+
       await new Promise<void>((resolve) => {
         let started = false;
         let startTimer = 0;
@@ -278,7 +441,7 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
         ws.send(
           JSON.stringify({
             type: "reply.create",
-            instructions: `Speak the following text verbatim, exactly as written, and nothing else: "${text}"`,
+            instructions: `Announce this alert now. Speak the following text verbatim, exactly as written, and nothing else: "${text}"`,
           }),
         );
       });
@@ -319,7 +482,68 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
     playerRef.current = null;
     if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
     setStatus("idle");
-  }, [closeSocket]);
+    setAskState("idle");
+  }, [closeSocket, setAskState]);
+
+  /** Microphone chunks (16 kHz PCM16) from the streaming worklet, upsampled to 24 kHz and forwarded at real-time pace while listening. */
+  const feedAudio = useCallback(
+    (buf: ArrayBuffer) => {
+      if (!listeningRef.current) return;
+      const ws = wsRef.current;
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      const up = upsamplerRef.current.convert(new Int16Array(buf));
+      ws.send(JSON.stringify({ type: "input.audio", audio: bytesToBase64(new Uint8Array(up.buffer, up.byteOffset, up.byteLength)) }));
+    },
+    [],
+  );
+
+  /** Turns continuous room listening on or off (on while a live microphone session runs). */
+  const setListening = useCallback(
+    (on: boolean) => {
+      if (listeningRef.current === on) return;
+      listeningRef.current = on;
+      if (on && enabledRef.current && hasKeyRef.current) connect().catch(() => undefined);
+      if (!on) touchIdle();
+    },
+    [connect, touchIdle],
+  );
+
+  /** Marks that a question to Surgr was heard by the room transcript, so the card can show it while the agent works. */
+  const noteQuestion = useCallback(
+    (text: string) => {
+      setExchange({ question: text, at: Date.now() });
+      if (askRef.current === "idle") setAskState("listening");
+      window.setTimeout(() => {
+        if (askRef.current === "listening") setAskState("idle");
+      }, 10_000);
+    },
+    [setAskState],
+  );
+
+  /** Manual trigger: asks the agent to answer the last thing said to it (for when the wake word was not recognised). */
+  const startAsk = useCallback(async (): Promise<boolean> => {
+    if (!enabledRef.current || !hasKeyRef.current) return false;
+    let ws: WebSocket;
+    try {
+      ws = await connect();
+    } catch {
+      return false;
+    }
+    if (ws.readyState !== WebSocket.OPEN) return false;
+    setAskState("listening");
+    ws.send(JSON.stringify({ type: "reply.create", instructions: "A team member just asked you a question about the case. Answer it now using the tools; if nothing was asked, report the open orders." }));
+    window.setTimeout(() => {
+      if (askRef.current === "listening") setAskState("idle");
+    }, 10_000);
+    touchIdle();
+    return true;
+  }, [connect, setAskState, touchIdle]);
+
+  const stopAsk = useCallback(() => {
+    setAskState("idle");
+  }, [setAskState]);
+
+  const clearExchange = useCallback(() => setExchange(null), []);
 
   /** Call from a user gesture: unlocks audio playback and pre-connects the agent. */
   const warmUp = useCallback(() => {
@@ -334,10 +558,10 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
     }
   }, [enabled, closeSocket]);
 
-  // A hidden tab should not keep a billable agent session open; it reconnects on the next alert.
+  // A hidden tab should not keep a billable agent session open unless the room is being listened to; it reconnects on the next alert.
   useEffect(() => {
     const onVisibility = () => {
-      if (document.visibilityState === "hidden" && !busyRef.current) disconnect();
+      if (document.visibilityState === "hidden" && !busyRef.current && askRef.current === "idle" && !listeningRef.current) disconnect();
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
@@ -352,5 +576,22 @@ export function useVoiceAgent({ enabled, hasKey }: Options) {
     [closeSocket],
   );
 
-  return { status: enabled ? status : ("idle" as VoiceStatus), lastSpoken, error, speak, stop, warmUp, disconnect };
+  return {
+    status: enabled ? status : ("idle" as VoiceStatus),
+    lastSpoken,
+    error,
+    speak,
+    stop,
+    warmUp,
+    disconnect,
+    ask,
+    exchange,
+    suppressedReplies,
+    feedAudio,
+    setListening,
+    noteQuestion,
+    startAsk,
+    stopAsk,
+    clearExchange,
+  };
 }
