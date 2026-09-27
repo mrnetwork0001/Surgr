@@ -188,9 +188,14 @@ h3 {
 .cockpit {
   display: grid;
   grid-template-rows: auto auto 1fr auto;
+  grid-template-columns: minmax(0, 1fr);
   height: 100vh;
   overflow: hidden;
   background: #000;
+}
+
+.cockpit > * {
+  min-width: 0;
 }
 
 .cockpit-backdrop {
@@ -1621,12 +1626,22 @@ h3 {
     min-height: 100vh;
     overflow: auto;
   }
-  .header {
+  .cockpit {
+    overflow-x: hidden;
+  }
+  .cockpit > .header {
     position: sticky;
     top: 0;
     z-index: 40;
     flex-wrap: nowrap;
     padding: 8px 14px;
+  }
+  .main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .panel,
+  .main > * {
+    min-width: 0;
   }
   .header .status-row,
   .header .controls {
@@ -1656,6 +1671,17 @@ h3 {
   }
   .scenarios {
     grid-template-columns: 1fr 1fr;
+  }
+  .inject {
+    flex-wrap: wrap;
+  }
+  .inject select {
+    max-width: 100%;
+    flex: 1 1 100%;
+  }
+  .inject input {
+    min-width: 0;
+    flex: 1 1 160px;
   }
   .modal-backdrop {
     padding: 10px;
