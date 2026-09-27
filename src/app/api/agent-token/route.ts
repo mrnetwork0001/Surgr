@@ -7,7 +7,12 @@ export async function GET() {
   const url = new URL("https://agents.assemblyai.com/v1/token");
   url.searchParams.set("expires_in_seconds", "300");
   url.searchParams.set("max_session_duration_seconds", "7200");
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${key}` }, cache: "no-store" });
+  let res: Response;
+  try {
+    res = await fetch(url, { headers: { Authorization: `Bearer ${key}` }, cache: "no-store", signal: AbortSignal.timeout(15000) });
+  } catch (e) {
+    return Response.json({ error: `Could not reach AssemblyAI Voice Agent (${e instanceof Error ? e.message : String(e)})` }, { status: 502 });
+  }
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     return Response.json({ error: `Voice Agent token request failed (${res.status}): ${body.slice(0, 200)}` }, { status: 502 });

@@ -7,7 +7,12 @@ export async function GET() {
   const url = new URL("https://streaming.assemblyai.com/v3/token");
   url.searchParams.set("expires_in_seconds", "120");
   url.searchParams.set("max_session_duration_seconds", "7200");
-  const res = await fetch(url, { headers: { Authorization: key }, cache: "no-store" });
+  let res: Response;
+  try {
+    res = await fetch(url, { headers: { Authorization: key }, cache: "no-store", signal: AbortSignal.timeout(15000) });
+  } catch (e) {
+    return Response.json({ error: `Could not reach AssemblyAI streaming (${e instanceof Error ? e.message : String(e)})` }, { status: 502 });
+  }
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     return Response.json({ error: `AssemblyAI token request failed (${res.status}): ${body.slice(0, 200)}` }, { status: 502 });
