@@ -21,7 +21,7 @@ export default function Cockpit() {
       <Header surgr={surgr} />
       <AlertBanner alerts={surgr.unacknowledged} onAck={surgr.ackAlert} onAckAll={surgr.ackAllAlerts} voiceStatus={surgr.voice.status} />
       <main className="main">
-        <section className="panel panel-transcript">
+        <section id="panel-transcript" className="panel panel-transcript">
           <TranscriptFeed
             turns={state.turns}
             speakerRoles={state.speakerRoles}
@@ -32,10 +32,10 @@ export default function Cockpit() {
             micLevel={surgr.stt.level}
           />
         </section>
-        <section className="panel panel-orders">
+        <section id="panel-orders" className="panel panel-orders">
           <OrderBoard orders={state.orders} speakerRoles={state.speakerRoles} />
         </section>
-        <section className="panel panel-checklist">
+        <section id="panel-checklist" className="panel panel-checklist">
           <ChecklistPanel checklist={state.checklist} phase={state.phase} phaseHistory={state.phaseHistory} />
         </section>
       </main>

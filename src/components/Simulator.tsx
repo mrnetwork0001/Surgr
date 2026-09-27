@@ -26,7 +26,7 @@ export default function Simulator({ sim, speed, onSpeed, onPlay, onStop, onInjec
   };
 
   return (
-    <footer className={`simulator ${open ? "" : "simulator-collapsed"}`}>
+    <footer id="panel-simulator" className={`simulator ${open ? "" : "simulator-collapsed"}`}>
       <div className="sim-head">
         <button className="btn btn-ghost btn-small" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
           {open ? "▾" : "▴"} OR audio simulator
