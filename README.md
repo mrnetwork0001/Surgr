@@ -42,6 +42,13 @@ Gateway model access is per account. Surgr asks for Claude first and falls back 
 3. Trigger *Dose mismatch*, *No read-back*, *Rushed Time Out* or *No Time Out at all* and hear Surgr **speak the alert** into the room.
 4. Click **Export EHR report** for the structured record with timestamp links back into the transcript, JSON download and print view.
 
+### Delivering the record
+
+The report screen has a **Deliver** bar: **Download PDF** builds the operative record in the browser (no print dialog), **Share…** hands the PDF to the device's share sheet (AirDrop, Messages, WhatsApp, Mail…), **Spoken debrief** has Surgr read the post-op summary aloud through the Voice Agent, **Send to Telegram** delivers the PDF to a linked Telegram chat, and **Email PDF** sends it through Resend.
+
+- Telegram: create a bot with [@BotFather](https://t.me/BotFather) (`/newbot`), put its token in `TELEGRAM_BOT_TOKEN`, and do not set a webhook on it. The first time, the app opens the bot; press **Start** and the report is sent the moment the link is confirmed. The link is remembered in the browser.
+- Email: set `RESEND_API_KEY` (and optionally `SURGR_EMAIL_FROM`). Without a verified sending domain, Resend delivers only to the address on your Resend account.
+
 No second person for a live-microphone test? Play `public/audio/rehearsal-two-voices.m4a` (also served at `/audio/rehearsal-two-voices.m4a`) from a phone held near the laptop's microphone: it is a 78-second scripted exchange in three synthesized voices covering a correct read-back, a dose mismatch with correction, a ten-second timeout, and a rushed Time Out. Do not play it from the laptop itself; the browser's echo cancellation suppresses audio the same machine is producing.
 
 Recording or demoing alone with your own voice? Turn on **Solo demo** in the header. With one voice playing every role, speaker labels put the order and its read-back on the same speaker, which Surgr would otherwise flag as a self-read-back; solo mode accepts it and notes the setting in the report.
@@ -88,6 +95,8 @@ npx tsx scripts/simulate.ts
 | `SURGR_REPORT_MODEL` | Optional, default `claude-sonnet-4-6` (falls back if the account lacks access) |
 | `SURGR_FALLBACK_MODEL` | Optional, default `qwen3.5-4b-32k-fast` |
 | `SURGR_VOICE_ID` | Optional, default `george` |
+| `TELEGRAM_BOT_TOKEN` | Optional, enables Send to Telegram from the report |
+| `RESEND_API_KEY`, `SURGR_EMAIL_FROM` | Optional, enable Email PDF from the report |
 
 Protocol checks that run against the live services from Node (need the key in `.env.local`):
 
