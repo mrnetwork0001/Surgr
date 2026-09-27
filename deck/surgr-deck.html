@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Surgr — AssemblyAI Voice Agent Hackathon 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Barlow:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  @page { size: 1920px 1080px; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #000; color: #fff; font-family: 'Barlow', system-ui, sans-serif; font-weight: 300; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .slide { position: relative; width: 1920px; height: 1080px; overflow: hidden; page-break-after: always; break-after: page; padding: 96px 120px; background: #000; }
+  .slide:last-child { page-break-after: auto; }
+  .glow { position: absolute; inset: 0; pointer-events: none; }
+  .g1 { background: radial-gradient(1100px 620px at 12% 0%, rgba(45,212,191,.16), transparent 62%); }
+  .g2 { background: radial-gradient(1000px 600px at 90% 10%, rgba(14,165,233,.14), transparent 62%); }
+  .g3 { background: radial-gradient(900px 600px at 50% 110%, rgba(79,70,229,.14), transparent 62%); }
+  .rel { position: relative; height: 100%; display: flex; flex-direction: column; }
+  .kicker { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 20px; letter-spacing: .28em; text-transform: uppercase; color: rgba(255,255,255,.55); margin-bottom: 26px; }
+  h1 { font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; font-size: 132px; line-height: .92; letter-spacing: -4px; margin: 0; }
+  h2 { font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; font-size: 92px; line-height: .95; letter-spacing: -3px; margin: 0 0 40px; }
+  h3 { font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; font-size: 44px; line-height: 1; letter-spacing: -1px; margin: 0 0 14px; }
+  p, li { font-size: 30px; line-height: 1.4; color: rgba(255,255,255,.85); margin: 0; }
+  .lead { font-size: 38px; line-height: 1.35; max-width: 1400px; color: rgba(255,255,255,.9); }
+  .muted { color: rgba(255,255,255,.55); }
+  .small { font-size: 22px; }
+  .mono { font-family: 'Geist Mono', ui-monospace, monospace; }
+  .accent { color: #2dd4bf; }
+  .glass { background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.14); border-radius: 28px; box-shadow: inset 0 1px 1px rgba(255,255,255,.08); padding: 36px 40px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 28px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+  .stat { font-family: 'Instrument Serif', serif; font-style: italic; font-size: 96px; line-height: 1; letter-spacing: -2px; }
+  .foot { position: absolute; left: 120px; right: 120px; bottom: 48px; display: flex; justify-content: space-between; font-family: 'Geist Mono', monospace; font-size: 18px; letter-spacing: .2em; text-transform: uppercase; color: rgba(255,255,255,.4); }
+  .pill { display: inline-block; border: 1px solid rgba(255,255,255,.2); border-radius: 999px; padding: 8px 20px; font-size: 22px; margin: 0 10px 12px 0; color: rgba(255,255,255,.9); }
+  .shot { border-radius: 24px; border: 1px solid rgba(255,255,255,.16); box-shadow: 0 40px 100px rgba(0,0,0,.6); width: 100%; display: block; }
+  .frame { background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.14); border-radius: 30px; padding: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: 26px; }
+  th { text-align: left; font-family: 'Geist Mono', monospace; font-weight: 500; font-size: 18px; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.5); padding: 0 18px 14px 0; border-bottom: 1px solid rgba(255,255,255,.14); }
+  td { padding: 16px 18px 16px 0; border-bottom: 1px solid rgba(255,255,255,.08); vertical-align: top; line-height: 1.35; }
+  ul { padding-left: 34px; margin: 0; }
+  li { margin-bottom: 12px; }
+  .quote { font-family: 'Instrument Serif', serif; font-style: italic; font-size: 54px; line-height: 1.1; letter-spacing: -1px; color: #fff; }
+  .flow { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; font-family: 'Geist Mono', monospace; font-size: 24px; }
+  .flow span { border: 1px solid rgba(255,255,255,.2); border-radius: 999px; padding: 12px 22px; }
+  .flow i { width: 42px; height: 2px; background: linear-gradient(90deg,#2dd4bf,#0ea5e9); display: inline-block; }
+  .step { display: grid; grid-template-columns: 90px 1fr; gap: 20px; align-items: start; }
+  .num { font-family: 'Geist Mono', monospace; color: #2dd4bf; font-size: 22px; letter-spacing: .2em; padding-top: 14px; }
+  .brand { height: 92px; }
+  .check { color: #22c55e; } .cross { color: #ef4444; }
+  .compact .glass { padding: 26px 28px; }
+  .compact p { font-size: 25px; line-height: 1.32; }
+  .compact h3 { font-size: 38px; }
+  .shot-tall { max-height: 780px; object-fit: cover; object-position: top; }
+</style>
+</head>
+<body>
+
+<!-- 1 · Title -->
+<section class="slide"><div class="glow g1"></div><div class="glow g2"></div>
+  <div class="rel" style="justify-content:center">
+    <img class="brand" src="img/wordmark.png" alt="Surgr" style="width:auto;height:150px;margin-bottom:64px">
+    <h1 style="max-width:1500px">Every verbal order in the OR,<br><span class="accent">verified out loud.</span></h1>
+    <p class="lead" style="margin-top:44px">A real-time closed-loop safety copilot for the operating room. It listens, checks every drug order against its read-back, tracks the WHO checklist, speaks up when a loop does not close, and writes the audit record.</p>
+    <div style="margin-top:56px" class="small muted mono">ASSEMBLYAI VOICE AGENT HACKATHON · SEPTEMBER 2026 · GITHUB.COM/MRNETWORK0001/SURGR</div>
+  </div>
+  <div class="foot"><span>Surgr</span><span>01</span></div>
+</section>
+
+<!-- 2 · Problem -->
+<section class="slide"><div class="glow g1"></div>
+  <div class="rel">
+    <div class="kicker">The problem</div>
+    <h2>The loop breaks quietly</h2>
+    <p class="lead">Drugs in surgery are ordered by voice. The standard is closed-loop communication: repeat the order back, get it confirmed, then act. Aviation made that mandatory decades ago. In an operating room it depends on people remembering under noise, fatigue and time pressure. Nothing beeps when a read-back does not happen.</p>
+    <div class="grid4" style="margin-top:auto">
+      <div class="glass"><div class="stat">1 in 20</div><p style="margin-top:18px">perioperative medication administrations involve an error or adverse drug event</p><p class="small muted" style="margin-top:14px">Nanji et al., Anesthesiology, 2016</p></div>
+      <div class="glass"><div class="stat">11%→7%</div><p style="margin-top:18px">major complications after the WHO Surgical Safety Checklist; deaths 1.5% → 0.8%</p><p class="small muted" style="margin-top:14px">Haynes et al., NEJM, 2009</p></div>
+      <div class="glass"><div class="stat">~2 in 3</div><p style="margin-top:18px">sentinel events involve a breakdown in team communication</p><p class="small muted" style="margin-top:14px">The Joint Commission</p></div>
+      <div class="glass"><div class="stat">310M+</div><p style="margin-top:18px">major operations performed worldwide every year</p><p class="small muted" style="margin-top:14px">Weiser et al., 2016</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Surgr</span><span>02</span></div>
+</section>
+
+<!-- 3 · What it does -->
+<section class="slide"><div class="glow g2"></div>
+  <div class="rel">
+    <div class="kicker">The product</div>
+    <h2 style="font-size:80px;margin-bottom:24px">Listen, understand, intervene, document</h2>
+    <div class="grid4 compact" style="margin-top:8px">
+      <div class="glass"><div class="num">01</div><h3>Listen</h3><p>Room audio streams to AssemblyAI. Medical mode gets drug names and doses right; speaker labels tell surgeon, anesthesiologist and nurse apart on one microphone.</p></div>
+      <div class="glass"><div class="num">02</div><h3>Understand</h3><p>A deterministic classifier parses orders, read-backs and checklist statements in under a millisecond. Ambiguous drug talk goes to the LLM Gateway under a strict JSON schema.</p></div>
+      <div class="glass"><div class="num">03</div><h3>Intervene</h3><p>Every order gets ten seconds to be read back. Wrong dose, wrong drug, wrong route or silence, and Surgr speaks the alert into the room through the Voice Agent.</p></div>
+      <div class="glass"><div class="num">04</div><h3>Document</h3><p>An operative communication record where every order, read-back, checklist item and safety event links to the exact second in the audio. PDF, Telegram, email, spoken debrief.</p></div>
+    </div>
+    <div style="margin-top:28px" class="glass">
+      <div class="quote" style="font-size:40px">“Safety alert. Read-back dose mismatch. The surgeon ordered one hundred micrograms fentanyl. Anesthesia read back ten micrograms. Please stop and re-confirm.”</div>
+      <p class="small muted" style="margin-top:12px">What the room hears about one second after a wrong read-back. This sentence is the product.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Surgr</span><span>03</span></div>
+</section>
+
+<!-- 4 · The cockpit -->
+<section class="slide"><div class="glow g3"></div>
+  <div class="rel">
+    <div class="kicker">The cockpit</div>
+    <div class="grid2" style="grid-template-columns: 1.55fr 1fr; align-items:start; gap:48px">
+      <div class="frame"><img class="shot" src="img/cockpit.png" alt="Surgr cockpit"></div>
+      <div>
+        <h2 style="font-size:72px">One screen for the whole room. Nobody has to look at it.</h2>
+        <ul>
+          <li><b>Transcript by role</b>, every order and read-back tagged as it lands.</li>
+          <li><b>Order board</b> with a ten-second countdown; a mismatch goes red and stays red until a correct read-back arrives.</li>
+          <li><b>WHO checklist</b> that ticks itself from speech; a phase that ends with gaps, or an incision without a Time Out, raises a spoken alert.</li>
+          <li><b>Simulator</b> with nine scripted scenarios so any judge can trigger a wrong dose without an operating room.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Surgr</span><span>04</span></div>
+</section>
+
+<!-- 5 · Ask Surgr -->
+<section class="slide"><div class="glow g1"></div>
+  <div class="rel">
+    <div class="kicker">Ask Surgr</div>
+    <div class="grid2" style="grid-template-columns: 1fr 1.35fr; align-items:start; gap:48px">
+      <div>
+        <h2 style="font-size:76px">The room can ask it questions</h2>
+        <p class="lead" style="font-size:32px">The Voice Agent listens to the room for the whole case. Anything not addressed to Surgr is answered with silence, discarded before it plays. Say its name and it answers from live state through JSON-schema tools.</p>
+        <div style="margin-top:28px">
+          <span class="pill mono">get_open_orders</span><span class="pill mono">get_last_order</span><span class="pill mono">get_checklist_status</span><span class="pill mono">get_session_summary</span><span class="pill mono">get_recent_alerts</span><span class="pill mono">acknowledge_alerts</span>
+        </div>
+      </div>
+      <div class="frame"><img class="shot" src="img/ask.png" alt="Ask Surgr exchange"></div>
+    </div>
+    <div class="glass" style="margin-top:auto">
+      <div class="quote" style="font-size:44px">“Surgr, what is still open?” &nbsp;→&nbsp; “You have one open order for two grams of cefazolin.”</div>
+      <p class="small muted" style="margin-top:14px">Verified against the live Voice Agent API: tool call issued, result returned, answer spoken.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Surgr</span><span>05</span></div>
+</section>
+
+<!-- 6 · The record -->
+<section class="slide"><div class="glow g2"></div>
+  <div class="rel">
+    <div class="kicker">The record</div>
+    <div class="grid2" style="grid-template-columns: 1.5fr 1fr; align-items:start; gap:48px">
+      <div class="frame"><img class="shot shot-tall" src="img/report.png" alt="Operative communication record"></div>
+      <div>
+        <h2 style="font-size:72px">The audit writes itself</h2>
+        <ul>
+          <li>Closed-loop rate, mean read-back time, every medication with order and read-back timestamps.</li>
+          <li>WHO compliance per phase, safety events with how they were resolved, recommendations.</li>
+          <li>Facts and timestamps always come from Surgr's own state; the LLM only writes narrative, and the record says so.</li>
+          <li>Delivered as PDF, to Telegram, by email, through the device share sheet, or read aloud as a spoken debrief.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Surgr</span><span>06</span></div>
+</section>
+
+<!-- 7 · Built on AssemblyAI -->
+<section class="slide"><div class="glow g3"></div>
+  <div class="rel">
+    <div class="kicker">Built on AssemblyAI</div>
+    <h2>Four products, one safety loop</h2>
+    <div class="flow" style="margin-bottom:40px"><span>Room mic</span><i></i><span>Streaming STT v3</span><i></i><span>Rules + LLM Gateway</span><i></i><span>Read-back state machine</span><i></i><span>Voice Agent · EHR record</span></div>
+    <table>
+      <tr><th>Layer</th><th>AssemblyAI product</th><th>How Surgr uses it</th></tr>
+      <tr><td>Live transcription</td><td class="mono">Streaming v3 · universal-3-6-pro</td><td>Medical mode formats drugs and doses; 47-drug keyterm list; clinician silence thresholds; short-lived browser tokens.</td></tr>
+      <tr><td>Who is speaking</td><td class="mono">speaker_labels</td><td>True diarization on one microphone, so a read-back from the person who gave the order is caught.</td></tr>
+      <tr><td>Understanding</td><td class="mono">LLM Gateway</td><td>JSON-schema classification of ambiguous drug talk; report narrative. Budget read from rate-limit headers, never blocks the safety loop.</td></tr>
+      <tr><td>Voice in the room</td><td class="mono">Voice Agent API</td><td>Alerts via reply.create; continuous room listening with silent-reply suppression; six client tools answer questions from live state.</td></tr>
+    </table>
+  </div>
+  <div class="foot"><span>Surgr</span><span>07</span></div>
+</section>
+
+<!-- 8 · Evidence -->
+<section class="slide"><div class="glow g1"></div>
+  <div class="rel">
+    <div class="kicker">What we verified</div>
+    <h2>Every integration tested against the live services</h2>
+    <div class="grid3">
+      <div class="glass"><h3>Streaming</h3><p>A 78-second three-voice rehearsal streamed to AssemblyAI transcribed <b>all nine lines verbatim</b> with two speaker labels and doses written as digits by medical mode.</p></div>
+      <div class="glass"><h3>Voice Agent</h3><p>A mismatch alert was spoken <b>word for word</b> (eleven seconds of audio). Tool calling confirmed: question in, <span class="mono">get_open_orders</span> called, answer spoken.</p></div>
+      <div class="glass"><h3>Live microphone</h3><p>A real session in Chrome: two voices separated, three alerts spoken at the right moments, orders closed, report exported, printed and delivered.</p></div>
+    </div>
+    <div class="grid3" style="margin-top:28px">
+      <div class="glass"><div class="stat" style="font-size:80px">&lt;1 ms</div><p>rule classification per utterance</p></div>
+      <div class="glass"><div class="stat" style="font-size:80px">≈1 s</div><p>from a wrong read-back to the spoken alert</p></div>
+      <div class="glass"><div class="stat" style="font-size:80px">10 s</div><p>read-back window before a timeout alert</p></div>
+    </div>
+    <p class="small muted" style="margin-top:auto">Nine scripted scenarios run through the engine as a regression suite. Solo demo mode and a rehearsal audio file let anyone test without a second person.</p>
+  </div>
+  <div class="foot"><span>Surgr</span><span>08</span></div>
+</section>
+
+<!-- 9 · Who it's for -->
+<section class="slide"><div class="glow g2"></div>
+  <div class="rel">
+    <div class="kicker">Who gains</div>
+    <h2>Built for the people administering the drug</h2>
+    <div class="grid3">
+      <div class="glass"><h3>Anesthesiologist</h3><p>A second check on every dose before the syringe goes in. The person who benefits most, because they are the one administering.</p></div>
+      <div class="glass"><h3>Surgeon</h3><p>Confirmation that what was said is what is being given, without policing it. Orders, read-backs and alerts documented for them.</p></div>
+      <div class="glass"><h3>Nurses</h3><p>The checklist tracks itself. No clipboard, no chasing eight items while the room moves on.</p></div>
+    </div>
+    <div class="grid2" style="margin-top:28px">
+      <div class="glass"><h3>Quality &amp; safety office</h3><p>Objective closed-loop and checklist compliance per room and per team, and a defensible timestamped record when an incident is reviewed.</p></div>
+      <div class="glass"><h3>A day with it</h3><p>A microphone, a speaker, Surgr on the wall or nowhere visible. The team works as before. Once or twice a week it says “read-back mismatch, please re-confirm”. That sentence is the product.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Surgr</span><span>09</span></div>
+</section>
+
+<!-- 10 · Market -->
+<section class="slide"><div class="glow g3"></div>
+  <div class="rel">
+    <div class="kicker">Market and model</div>
+    <h2>Priced per operating room</h2>
+    <div class="grid3">
+      <div class="glass"><div class="kicker" style="margin-bottom:10px">TAM</div><div class="stat" style="font-size:84px">310M+</div><p>major operations a year worldwide, in an estimated 250,000+ operating rooms across hospitals and surgery centres.</p></div>
+      <div class="glass"><div class="kicker" style="margin-bottom:10px">SAM · United States first</div><div class="stat" style="font-size:84px">≈$240M/yr</div><p>≈40,000 US operating rooms × $500 per OR per month. Sold to hospital quality and perioperative leadership.</p></div>
+      <div class="glass"><div class="kicker" style="margin-bottom:10px">Beachhead</div><div class="stat" style="font-size:84px">≈$10M/yr</div><p>≈1,000 simulation centres and residency programmes at $10k per site licence, where instant spoken feedback needs no regulatory clearance.</p></div>
+    </div>
+    <div class="glass" style="margin-top:28px">
+      <h3>Revenue streams</h3>
+      <p>Per-OR subscription for live use · site licences for simulation and training · analytics tier for quality offices · integration services for EHR export. Figures are planning estimates, not audited market data.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Surgr</span><span>10</span></div>
+</section>
+
+<!-- 11 · Competition -->
+<section class="slide"><div class="glow g1"></div>
+  <div class="rel">
+    <div class="kicker">Competitive landscape</div>
+    <h2>Others document or review. Surgr intervenes.</h2>
+    <table>
+      <tr><th>Category</th><th>Examples</th><th>What they do</th><th>What Surgr does differently</th></tr>
+      <tr><td>Ambient clinical scribes</td><td>Abridge, Nuance DAX, Ambience</td><td>Turn conversations into notes after the fact.</td><td>Acts during the case, in the room, out loud.</td></tr>
+      <tr><td>OR black-box analytics</td><td>Surgical Safety Technologies</td><td>Record the OR for retrospective review.</td><td>Closes the loop in the moment; the record is a by-product.</td></tr>
+      <tr><td>Checklist apps</td><td>Digital WHO checklists</td><td>Someone taps items on a tablet.</td><td>Items tick from speech; skipped phases are spoken alerts.</td></tr>
+      <tr><td>Hackathon look-alikes</td><td>OR and resuscitation voice recorders</td><td>Same instinct: transcribe and flag.</td><td>Deterministic dose and unit logic, speaker-aware self-read-back detection, a room that can ask questions, delivery to Telegram and a spoken debrief, all verified live.</td></tr>
+    </table>
+    <p class="small muted" style="margin-top:auto">Moat: the deterministic safety engine and the evidence base it produces, not the transcription layer.</p>
+  </div>
+  <div class="foot"><span>Surgr</span><span>11</span></div>
+</section>
+
+<!-- 12 · Roadmap -->
+<section class="slide"><div class="glow g2"></div>
+  <div class="rel">
+    <div class="kicker">Roadmap and honesty</div>
+    <h2>Three stages into the operating room</h2>
+    <div class="grid3">
+      <div class="glass"><div class="num">STAGE 1 · NOW</div><h3>Simulation and training</h3><p>Residency programmes and simulation labs. Instant spoken feedback teaches closed-loop discipline. No regulatory barrier.</p></div>
+      <div class="glass"><div class="num">STAGE 2</div><h3>Silent mode in real ORs</h3><p>Compliance analytics per room and per team, no intervention. Builds the evidence base and the pilot relationships.</p></div>
+      <div class="glass"><div class="num">STAGE 3</div><h3>Live intervention</h3><p>After clinical validation and regulatory clearance. Multilingual rooms, EHR integration, on-premise audio.</p></div>
+    </div>
+    <div class="glass" style="margin-top:28px">
+      <h3>What we say plainly</h3>
+      <p>Surgr is a prototype, not a medical device. Similar voices can share a speaker label. Hackathon accounts get two LLM Gateway requests a minute, so the deterministic engine does the real-time work and the record says when the narrative fell back to the local summary.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Surgr</span><span>12</span></div>
+</section>
+
+<!-- 13 · Close -->
+<section class="slide"><div class="glow g1"></div><div class="glow g3"></div>
+  <div class="rel" style="justify-content:center">
+    <img class="brand" src="img/wordmark.png" alt="Surgr" style="width:auto;height:120px;margin-bottom:56px">
+    <h2 style="font-size:104px;max-width:1500px">Aviation cockpits have mandatory read-backs and a voice recorder. Operating rooms have neither.</h2>
+    <p class="lead" style="margin-top:36px">Surgr gives them both.</p>
+    <div style="margin-top:64px" class="small mono muted">LIVE APP · SEE SUBMISSION LINK &nbsp;&nbsp;·&nbsp;&nbsp; GITHUB.COM/MRNETWORK0001/SURGR &nbsp;&nbsp;·&nbsp;&nbsp; BUILT ON ASSEMBLYAI</div>
+  </div>
+  <div class="foot"><span>Surgr</span><span>13</span></div>
+</section>
+
+</body>
+</html>
