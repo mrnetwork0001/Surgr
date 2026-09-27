@@ -200,7 +200,10 @@ h3 {
   pointer-events: none;
 }
 
-.cockpit > :not(.cockpit-backdrop) {
+.cockpit > .header,
+.cockpit > .alerts,
+.cockpit > .main,
+.cockpit > .simulator {
   position: relative;
   z-index: 1;
 }
@@ -1388,9 +1391,39 @@ h3 {
     max-height: none;
     width: 100%;
   }
-  .modal-actions,
-  .link {
+  .modal-actions {
     display: none;
+  }
+  .link {
+    color: #111;
+    text-decoration: none;
+    pointer-events: none;
+  }
+  .report .item-done,
+  .report-stat-value,
+  .report h2 {
+    color: #111;
+  }
+  .report h3,
+  .muted,
+  .table th {
+    color: #555;
+  }
+  .status {
+    background: none;
+    border-color: #bbb;
+    color: #333;
+  }
+  .status-mismatch,
+  .status-timeout {
+    color: #b91c1c;
+  }
+  .status-confirmed {
+    color: #15803d;
+  }
+  .modal {
+    backdrop-filter: none;
+    padding: 0;
   }
   .report-stat,
   .report-phase,

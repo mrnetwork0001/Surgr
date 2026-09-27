@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import type { ReportResult } from "@/hooks/useSurgr";
 import { phaseLabel } from "@/lib/checklist";
 import { ROLE_LABEL } from "@/lib/readback";
@@ -27,6 +28,13 @@ function useCountdown(seconds: number | undefined): number {
 export default function ReportModal({ result, onClose, onJump, onRetry, retrying }: Props) {
   const r = result.report;
   const retryIn = useCountdown(result.retryAfterSec);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
   const download = () => {
     const blob = new Blob([JSON.stringify(r, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -45,7 +53,9 @@ export default function ReportModal({ result, onClose, onJump, onRetry, retrying
       <span>{formatMs(ms)}</span>
     );
 
-  return (
+  // Only ever mounted client-side after a click, so the portal target is always available.
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <div className="modal-backdrop" onClick={onClose} role="presentation">
       <div className="modal report" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="report-title">
         <div className="modal-head">
@@ -210,6 +220,7 @@ export default function ReportModal({ result, onClose, onJump, onRetry, retrying
           </ul>
         </section>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
