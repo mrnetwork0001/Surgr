@@ -29,7 +29,15 @@ export async function POST(req: Request) {
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    return Response.json({ error: `Email provider ${res.status}: ${body.slice(0, 200)}` }, { status: 502 });
+    let reason = body.slice(0, 200);
+    try {
+      const parsed = JSON.parse(body) as { message?: string };
+      if (parsed.message) reason = parsed.message;
+    } catch {
+      /* not JSON */
+    }
+    return Response.json({ error: `Email not sent: ${reason}` }, { status: 502 });
   }
-  return Response.json({ ok: true });
+  const data = (await res.json().catch(() => ({}))) as { id?: string };
+  return Response.json({ ok: true, id: data.id ?? null, to });
 }

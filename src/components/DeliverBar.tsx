@@ -116,7 +116,7 @@ export default function DeliverBar({ report, caps, speaking, onSpeak, onStopSpea
       setBusy("telegram");
       try {
         await sendTelegram(chat);
-        setNote({ tone: "ok", text: `Sent to ${tgName ?? "Telegram"}.` });
+        setNote({ tone: "ok", text: `Sent to ${tgName ?? "Telegram"} on Telegram. Open the chat with the bot to find the PDF.` });
       } catch (e) {
         setNote({ tone: "warn", text: e instanceof Error ? e.message : "Telegram send failed" });
       } finally {
@@ -154,7 +154,7 @@ export default function DeliverBar({ report, caps, speaking, onSpeak, onStopSpea
             setTgName(st.name ?? "Telegram");
             setTgLink(null);
             await sendTelegram(st.chat);
-            setNote({ tone: "ok", text: `Linked and sent to ${st.name ?? "Telegram"}.` });
+            setNote({ tone: "ok", text: `Linked and sent to ${st.name ?? "Telegram"} on Telegram. Open the chat with the bot to find the PDF.` });
             setBusy(null);
           }
         } catch (e) {
@@ -193,7 +193,8 @@ export default function DeliverBar({ report, caps, speaking, onSpeak, onStopSpea
       const res = await fetch("/api/share/email", { method: "POST", body: form });
       const data = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok) throw new Error(data.error ?? "Email failed");
-      setNote({ tone: "ok", text: `Emailed to ${email.trim()}.` });
+      setNote({ tone: "ok", text: `Emailed to ${email.trim()}. Check the inbox, and the spam folder the first time.` });
+      setEmail("");
     } catch (e) {
       setNote({ tone: "warn", text: e instanceof Error ? e.message : "Email failed" });
     } finally {
@@ -258,7 +259,17 @@ export default function DeliverBar({ report, caps, speaking, onSpeak, onStopSpea
           Open <a href={tgLink.deepLink} target="_blank" rel="noopener noreferrer">@{tgLink.botUsername}</a> in Telegram and press <strong>Start</strong>. The report is sent the moment the link is confirmed.
         </div>
       )}
-      {note && <div className={`deliver-note ${note.tone === "warn" ? "deliver-warn" : ""}`}>{note.text}</div>}
+      {note && (
+        <div className={`deliver-toast ${note.tone === "warn" ? "deliver-toast-warn" : "deliver-toast-ok"}`} role="status" aria-live="polite">
+          <span className="deliver-toast-icon" aria-hidden>
+            {note.tone === "warn" ? "!" : "✓"}
+          </span>
+          <span>{note.text}</span>
+          <button className="deliver-toast-close" onClick={() => setNote(null)} aria-label="Dismiss">
+            ×
+          </button>
+        </div>
+      )}
     </div>
   );
 }
