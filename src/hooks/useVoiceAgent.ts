@@ -273,8 +273,12 @@ export function useVoiceAgent({ enabled, hasKey, tools }: Options) {
           const r = replyAudioRef.current;
           if (typeof m.delta !== "string") break;
           r.text += m.delta;
-          if (r.decided || !r.text.trim()) break;
-          decideReply(r.text);
+          if (!r.decided && r.text.trim()) decideReply(r.text);
+          // Answers to the room appear on the Ask card as they are spoken, not only once finished.
+          if (r.decided && r.play && !r.alert) {
+            const partial = r.text.trim();
+            setExchange((prev) => ({ question: prev?.question, answer: partial, at: Date.now() }));
+          }
           break;
         }
         case "transcript.user":
