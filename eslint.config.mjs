@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Demo film and deck generators have their own toolchains.
+    "demo/**",
+    "deck/**",
   ]),
 ]);
 

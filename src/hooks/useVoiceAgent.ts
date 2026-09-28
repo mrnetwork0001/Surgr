@@ -66,7 +66,7 @@ export function useVoiceAgent({ enabled, hasKey, tools }: Options) {
   const idleTimerRef = useRef<number | null>(null);
   const queueRef = useRef<string[]>([]);
   const busyRef = useRef(false);
-  const replyWaiters = useRef<{ onStarted: () => void; onDone: () => void } | null>(null);
+  const replyWaiters = useRef<{ text: string; onStarted: () => void; onDone: (ok: boolean) => void } | null>(null);
   const enabledRef = useRef(enabled);
   const hasKeyRef = useRef(hasKey);
   const toolsRef = useRef<ToolHandler | undefined>(tools);
@@ -77,9 +77,13 @@ export function useVoiceAgent({ enabled, hasKey, tools }: Options) {
   const pendingToolResults = useRef<string[]>([]);
   const touchIdleRef = useRef<(() => void) | null>(null);
   /** Audio of the current reply, held until its first words show whether the agent is answering or staying silent. */
-  const replyAudioRef = useRef<{ decided: boolean; play: boolean; chunks: Int16Array[] }>({ decided: false, play: false, chunks: [] });
+  const replyAudioRef = useRef<{ decided: boolean; play: boolean; alert: boolean; chunks: Int16Array[]; text: string; samples: number }>({ decided: false, play: false, alert: false, chunks: [], text: "", samples: 0 });
   /** The alert most recently requested with reply.create, so a late agent rendition is never mistaken for an answer. */
-  const lastAlertRef = useRef<{ text: string; spokenByFallback: boolean }>({ text: "", spokenByFallback: false });
+  const lastAlertRef = useRef<{ text: string; spokenByFallback: boolean; at: number }>({ text: "", spokenByFallback: false, at: 0 });
+  /** Room-turn state from the agent, so an alert is never sent into the middle of the agent's own turn. */
+  const speechActiveRef = useRef(false);
+  const lastSpeechStopRef = useRef(0);
+  const autoReplyUntilRef = useRef(0);
   const [suppressedReplies, setSuppressedReplies] = useState(0);
 
   useEffect(() => {
@@ -121,7 +125,7 @@ export function useVoiceAgent({ enabled, hasKey, tools }: Options) {
     stopKeepalive();
     clearIdleTimer();
     replyInFlightRef.current = false;
-    replyAudioRef.current = { decided: false, play: false, chunks: [] };
+    replyAudioRef.current = { decided: false, play: false, alert: false, chunks: [], text: "", samples: 0 };
     pendingToolResults.current = [];
     const ws = wsRef.current;
     wsRef.current = null;
@@ -136,7 +140,7 @@ export function useVoiceAgent({ enabled, hasKey, tools }: Options) {
     } else {
       ws?.close();
     }
-    replyWaiters.current?.onDone();
+    replyWaiters.current?.onDone(false);
   }, [stopKeepalive, clearIdleTimer]);
 
   const disconnect = useCallback(() => {
@@ -201,6 +205,40 @@ export function useVoiceAgent({ enabled, hasKey, tools }: Options) {
     [sendJson],
   );
 
+  /** Classifies a reply from its first words: our pending alert, an answer to the room, or the silence token. */
+  const decideReply = useCallback(
+    (text: string) => {
+      const r = replyAudioRef.current;
+      if (r.decided) return;
+      r.decided = true;
+      const waiter = replyWaiters.current;
+      const firstWord = (t: string) => norm(t).split(" ")[0] ?? "";
+      if (SILENT_REPLY.test(text)) {
+        r.play = false;
+        setSuppressedReplies((n) => n + 1);
+      } else if (waiter && firstWord(text) === firstWord(waiter.text)) {
+        r.alert = true;
+        r.play = true;
+        setStatus("speaking");
+        waiter.onStarted();
+      } else if (
+        looksLikeAlert(text, lastAlertRef.current.text) ||
+        (lastAlertRef.current.text && performance.now() - lastAlertRef.current.at < 60_000 && firstWord(text) === firstWord(lastAlertRef.current.text))
+      ) {
+        // A late rendition of an alert the browser already spoke: never play it twice, never show it as an answer.
+        r.alert = false;
+        r.play = !lastAlertRef.current.spokenByFallback;
+      } else {
+        r.play = true;
+        setStatus("speaking");
+        setAskState("answering");
+      }
+      if (r.play) for (const c of r.chunks) getPlayer().enqueue(c);
+      r.chunks = [];
+    },
+    [getPlayer, setAskState],
+  );
+
   const handleMessage = useCallback(
     (raw: string) => {
       let m: { type?: string } & Record<string, unknown>;
@@ -210,44 +248,37 @@ export function useVoiceAgent({ enabled, hasKey, tools }: Options) {
         return;
       }
       switch (m.type) {
-        case "reply.started": {
-          replyInFlightRef.current = true;
-          // Alerts we requested play immediately; agent-initiated replies are held until their first words are known.
-          const isAlert = !!replyWaiters.current;
-          replyAudioRef.current = { decided: isAlert, play: isAlert, chunks: [] };
-          if (isAlert) {
-            setStatus("speaking");
-            replyWaiters.current?.onStarted();
-          }
+        case "input.speech.started":
+          speechActiveRef.current = true;
           break;
-        }
+        case "input.speech.stopped":
+          speechActiveRef.current = false;
+          lastSpeechStopRef.current = performance.now();
+          break;
+        case "reply.started":
+          replyInFlightRef.current = true;
+          // Nothing is played until the first words show what this reply is: our alert, an answer, or silence.
+          replyAudioRef.current = { decided: false, play: false, alert: false, chunks: [], text: "", samples: 0 };
+          break;
         case "reply.audio": {
           if (typeof m.data !== "string") break;
           const pcm = base64ToInt16(m.data);
           const r = replyAudioRef.current;
+          r.samples += pcm.length;
           if (!r.decided) r.chunks.push(pcm);
           else if (r.play) getPlayer().enqueue(pcm);
           break;
         }
         case "transcript.agent.delta": {
           const r = replyAudioRef.current;
-          if (r.decided || typeof m.delta !== "string") break;
-          const first = m.delta.trim();
-          if (!first) break;
-          r.decided = true;
-          const alertRendition = looksLikeAlert(first, lastAlertRef.current.text);
-          r.play = !SILENT_REPLY.test(first) && !(alertRendition && lastAlertRef.current.spokenByFallback);
-          if (r.play) {
-            setStatus("speaking");
-            if (!alertRendition) setAskState("answering");
-            for (const c of r.chunks) getPlayer().enqueue(c);
-          } else {
-            setSuppressedReplies((n) => n + 1);
-          }
-          r.chunks = [];
+          if (typeof m.delta !== "string") break;
+          r.text += m.delta;
+          if (r.decided || !r.text.trim()) break;
+          decideReply(r.text);
           break;
         }
         case "transcript.user":
+          if (listeningRef.current) autoReplyUntilRef.current = performance.now() + 4000;
           if (typeof m.text === "string" && (askRef.current !== "idle" || WAKE_HEARD.test(m.text))) {
             const q = m.text;
             setExchange((prev) => ({ question: q, answer: prev && prev.question === q ? prev.answer : undefined, at: Date.now() }));
@@ -257,38 +288,33 @@ export function useVoiceAgent({ enabled, hasKey, tools }: Options) {
           if (typeof m.text !== "string") break;
           const a = m.text;
           const r = replyAudioRef.current;
-          const isAlertText = looksLikeAlert(a, lastAlertRef.current.text);
-          if (!r.decided) {
-            // No deltas arrived for this reply; decide on the full text.
-            r.decided = true;
-            r.play = !SILENT_REPLY.test(a) && !(isAlertText && lastAlertRef.current.spokenByFallback);
-            if (r.play) {
-              setStatus("speaking");
-              if (!isAlertText) setAskState("answering");
-              for (const c of r.chunks) getPlayer().enqueue(c);
-            } else {
-              setSuppressedReplies((n) => n + 1);
-            }
-            r.chunks = [];
-          }
+          if (!r.decided) decideReply(a);
           if (r.play) {
             setLastSpoken(a);
-            if (!replyWaiters.current && !isAlertText) setExchange((prev) => ({ question: prev?.question, answer: a, at: Date.now() }));
+            if (!r.alert) setExchange((prev) => ({ question: prev?.question, answer: a, at: Date.now() }));
           }
           break;
         }
-        case "reply.done":
+        case "reply.done": {
           replyInFlightRef.current = false;
+          autoReplyUntilRef.current = 0;
           flushToolResults();
-          if (replyWaiters.current) {
-            replyWaiters.current.onDone();
-          } else {
+          const r = replyAudioRef.current;
+          if (!r.decided) decideReply(r.text || "silent");
+          if (r.alert) {
+            // The agent can flag a reply "interrupted" after it has already played in full (a queued room
+            // turn). Only treat it as lost when most of the audio never arrived; otherwise it would be said twice.
+            const expected = (replyWaiters.current?.text.length ?? r.text.length) * 0.055;
+            const played = r.samples / 24000;
+            replyWaiters.current?.onDone(m.status !== "interrupted" || played >= expected * 0.7);
+          } else if (r.play) {
             setAskState("idle");
             setStatus((s) => (s === "speaking" ? "ready" : s));
             touchIdleRef.current?.();
           }
-          replyAudioRef.current = { decided: false, play: false, chunks: [] };
+          replyAudioRef.current = { decided: false, play: false, alert: false, chunks: [], text: "", samples: 0 };
           break;
+        }
         case "tool.call":
           if (typeof m.call_id === "string" && typeof m.name === "string") {
             handleToolCall(m.call_id, m.name, (m.arguments as Record<string, unknown>) ?? {});
@@ -297,13 +323,13 @@ export function useVoiceAgent({ enabled, hasKey, tools }: Options) {
         case "session.error":
         case "error":
           setError(typeof m.message === "string" ? m.message : "Voice Agent error");
-          replyWaiters.current?.onDone();
+          replyWaiters.current?.onDone(false);
           break;
         default:
           break;
       }
     },
-    [getPlayer, setAskState, flushToolResults, handleToolCall],
+    [getPlayer, setAskState, flushToolResults, handleToolCall, decideReply],
   );
 
   const connect = useCallback((): Promise<WebSocket> => {
@@ -343,7 +369,7 @@ export function useVoiceAgent({ enabled, hasKey, tools }: Options) {
           type: "session.update",
           session: {
             system_prompt: SYSTEM_PROMPT,
-            input: { format: { encoding: "audio/pcm", sample_rate: INPUT_SAMPLE_RATE } },
+            input: { format: { encoding: "audio/pcm", sample_rate: INPUT_SAMPLE_RATE }, turn_detection: { interrupt_response: false } },
             output: { voice: data.voiceId ?? "george", format: { encoding: "audio/pcm" }, volume: 100 },
             tools: SURGR_TOOLS,
           },
@@ -359,7 +385,7 @@ export function useVoiceAgent({ enabled, hasKey, tools }: Options) {
         wsRef.current = null;
         readyRef.current = null;
         stopKeepalive();
-        replyWaiters.current?.onDone();
+        replyWaiters.current?.onDone(false);
         setStatus("idle");
         setAskState("idle");
       };
@@ -428,38 +454,58 @@ export function useVoiceAgent({ enabled, hasKey, tools }: Options) {
         await new Promise((r) => setTimeout(r, 250));
       }
 
-      lastAlertRef.current = { text, spokenByFallback: false };
-      await new Promise<void>((resolve) => {
-        let started = false;
-        let startTimer = 0;
-        let doneTimer = 0;
-        const finish = () => {
-          window.clearTimeout(startTimer);
-          window.clearTimeout(doneTimer);
-          replyWaiters.current = null;
-          resolve();
-        };
-        startTimer = window.setTimeout(() => {
-          if (started) return;
-          replyWaiters.current = null;
-          lastAlertRef.current = { text, spokenByFallback: true };
-          void fallbackSpeak(text).then(resolve);
-        }, 6000);
-        doneTimer = window.setTimeout(finish, 20000);
-        replyWaiters.current = {
-          onStarted: () => {
-            started = true;
+      // Never send an alert into the agent's own turn: wait until the room has settled (at most 5 s).
+      const settle = async () => {
+        for (let waited = 0; waited < 5000; waited += 150) {
+          const quiet = !replyInFlightRef.current && !speechActiveRef.current && performance.now() - lastSpeechStopRef.current > 1200 && performance.now() > autoReplyUntilRef.current;
+          if (quiet) return;
+          await new Promise((r) => setTimeout(r, 150));
+        }
+      };
+      lastAlertRef.current = { text, spokenByFallback: false, at: performance.now() };
+      const attempt = () =>
+        new Promise<"spoken" | "failed" | "fallback">((resolve) => {
+          let started = false;
+          let startTimer = 0;
+          let doneTimer = 0;
+          const finish = (result: "spoken" | "failed" | "fallback") => {
             window.clearTimeout(startTimer);
-          },
-          onDone: finish,
-        };
-        ws.send(
-          JSON.stringify({
-            type: "reply.create",
-            instructions: `Announce this alert now. Speak the following text verbatim, exactly as written, and nothing else: "${text}"`,
-          }),
-        );
-      });
+            window.clearTimeout(doneTimer);
+            replyWaiters.current = null;
+            resolve(result);
+          };
+          // Only a genuinely unresponsive agent falls back to the browser's voice; a slow one is waited for.
+          startTimer = window.setTimeout(() => {
+            if (started) return;
+            replyWaiters.current = null;
+            lastAlertRef.current = { text, spokenByFallback: true, at: performance.now() };
+            void fallbackSpeak(text).then(() => resolve("fallback"));
+          }, 15000);
+          doneTimer = window.setTimeout(() => finish("spoken"), 25000);
+          replyWaiters.current = {
+            text,
+            onStarted: () => {
+              started = true;
+              window.clearTimeout(startTimer);
+            },
+            onDone: (ok) => finish(ok && started ? "spoken" : "failed"),
+          };
+          ws.send(
+            JSON.stringify({
+              type: "reply.create",
+              instructions: `Announce this alert now. Speak the following text verbatim, exactly as written, and nothing else: "${text}"`,
+            }),
+          );
+        });
+      await settle();
+      let result = await attempt();
+      if (result === "failed" && ws.readyState === WebSocket.OPEN) {
+        // Interrupted or rejected: settle again and say it once more, in full.
+        await getPlayer().drained();
+        await settle();
+        result = await attempt();
+      }
+      if (result === "failed") await fallbackSpeak(text);
       await getPlayer().drained();
       setStatus((s) => (s === "speaking" ? "ready" : s));
       touchIdle();

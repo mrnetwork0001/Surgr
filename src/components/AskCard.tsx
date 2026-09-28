@@ -1,9 +1,19 @@
 "use client";
+import { useEffect } from "react";
 import type { Surgr } from "@/hooks/useSurgr";
+
+/** How long an answered exchange stays up before it clears itself, so it never hides the checklist for long. */
+const AUTO_DISMISS_MS = 15_000;
 
 /** Floating card showing the current "Ask Surgr" exchange: what was heard and what Surgr answered. */
 export default function AskCard({ surgr }: { surgr: Surgr }) {
-  const { ask, askExchange } = surgr;
+  const { ask, askExchange, clearAsk } = surgr;
+  const answeredAt = ask === "idle" && askExchange?.answer ? askExchange.at : null;
+  useEffect(() => {
+    if (answeredAt === null) return;
+    const t = window.setTimeout(clearAsk, AUTO_DISMISS_MS);
+    return () => window.clearTimeout(t);
+  }, [answeredAt, clearAsk]);
   if (ask === "idle" && !askExchange) return null;
   return (
     <aside className={`ask-card ${ask !== "idle" ? "ask-card-active" : ""}`} aria-live="polite">
