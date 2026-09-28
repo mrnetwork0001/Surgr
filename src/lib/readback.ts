@@ -304,7 +304,8 @@ function applyClassification(state: SurgrState, turn: TranscriptTurn, c: Classif
   if (c.kind === "drug_order" && c.drug) {
     s = openOrder(s, turn, c, now);
     applied = true;
-  } else if (c.drug || c.kind === "read_back") {
+  } else if (c.kind !== "other" && (c.drug || c.kind === "read_back")) {
+    // "other" never touches an order, even when it names a drug (questions, history, discussion).
     const r = applyReadBack(s, turn, c, now);
     s = r.state;
     applied = applied || r.applied;

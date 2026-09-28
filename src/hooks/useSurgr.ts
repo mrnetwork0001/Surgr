@@ -26,7 +26,7 @@ export interface ReportResult {
 
 const SIM_TURN_BASE = 100_000;
 /** "Surgr" as speech-to-text tends to hear it. "surgeon" is deliberately excluded. */
-const WAKE_WORD = /\b(?:surgr|surger|sergr|surgur|sirgr|sergei|sergey|surgeur)\b/i;
+const WAKE_WORD = /\b(?:surgr|surger|sergr|surgur|sirgr|sergei|sergey|sergio|surgeur)\b|^\s*surgeon[,.!]?\s+(?:what|how|is|was|did|are|were|which|any|do|does|has|have|can|could|tell|read|repeat|list)\b/i;
 /** After a gateway 429 without a retry-after hint, skip LLM calls for this long. */
 const LLM_BACKOFF_MS = 30_000;
 

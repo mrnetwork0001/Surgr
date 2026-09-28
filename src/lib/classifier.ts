@@ -59,6 +59,15 @@ export function ruleClassify(rawText: string): Classification {
     }
   }
 
+  // A question is never a read-back or an order unless it carries an explicit confirmation word
+  // ("fifty propofol, confirmed?" still counts). "Was the fentanyl confirmed?" must not close a loop.
+  const isQuestion = /\?\s*$/.test(text);
+  const opensAsQuestion = /^(?:[a-z]+[,.!]?\s+)?(?:was|were|is|are|did|do|does|has|have|had|can|could|should|would|which|what|how|why|when|who|any)\b/.test(text);
+  if (kind !== "other" && ((isQuestion && !readBackExplicit) || opensAsQuestion)) {
+    kind = "other";
+    confidence = 0.6;
+  }
+
   if ((kind === "other" || kind === "drug_mention") && checklistItemIds.length > 0) {
     kind = "checklist_item";
     confidence = Math.max(confidence, 0.8);
