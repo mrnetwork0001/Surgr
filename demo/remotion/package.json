@@ -1,0 +1,26 @@
+{
+  "name": "surgr-video",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "vo": "node vo-gen.js",
+    "voices": "node scripts/voices.mjs",
+    "sfx": "node scripts/sfx.mjs",
+    "capture": "node scripts/capture.mjs",
+    "studio": "remotion studio src/index.ts",
+    "still": "remotion still src/index.ts Surgr --browser-executable \"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --image-format png --overwrite",
+    "render": "remotion render src/index.ts Surgr out/surgr-demo.mp4 --browser-executable \"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --codec h264 --crf 16 --x264-preset slow --image-format png --pixel-format yuv420p --color-space bt709 --audio-codec aac --audio-bitrate 320k --overwrite && node scripts/finish.mjs out/surgr-demo.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.376",
+    "@remotion/google-fonts": "^4.0.376",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.376"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "playwright": "1.58",
+    "typescript": "^5.9.3"
+  }
+}

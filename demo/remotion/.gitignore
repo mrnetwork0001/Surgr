@@ -1,0 +1,7 @@
+node_modules/
+out/
+clips/tmp/
+public/clips/
+.env
+public/agent/
+public/voices/*.wav

@@ -1,0 +1,333 @@
+{
+ "duration": 109.237333,
+ "lines": [
+  {
+   "id": "L1",
+   "role": "surgeon",
+   "gap": 2,
+   "text": "Push 100 micrograms of fentanyl.",
+   "say": "Push one hundred micrograms of fentanyl.",
+   "start": 2,
+   "end": 4.183,
+   "words": [
+    {
+     "w": "Push",
+     "s": 2,
+     "e": 2.325
+    },
+    {
+     "w": "one",
+     "s": 2.406,
+     "e": 2.627
+    },
+    {
+     "w": "hundred",
+     "s": 2.673,
+     "e": 2.906
+    },
+    {
+     "w": "micrograms",
+     "s": 2.94,
+     "e": 3.405
+    },
+    {
+     "w": "of",
+     "s": 3.44,
+     "e": 3.486
+    },
+    {
+     "w": "fentanyl.",
+     "s": 3.509,
+     "e": 4.183
+    }
+   ]
+  },
+  {
+   "id": "L2",
+   "role": "anesthesia",
+   "gap": 2.2,
+   "text": "Pushing 10 micrograms fentanyl.",
+   "say": "Pushing ten micrograms fentanyl.",
+   "start": 6.383,
+   "end": 8.751,
+   "words": [
+    {
+     "w": "Pushing",
+     "s": 6.383,
+     "e": 6.813
+    },
+    {
+     "w": "ten",
+     "s": 6.929,
+     "e": 7.242
+    },
+    {
+     "w": "micrograms",
+     "s": 7.312,
+     "e": 8.02
+    },
+    {
+     "w": "fentanyl.",
+     "s": 8.066,
+     "e": 8.751
+    }
+   ]
+  },
+  {
+   "id": "L3",
+   "role": "anesthesia",
+   "gap": 17,
+   "text": "Correction. 100 micrograms fentanyl, confirmed.",
+   "say": "Correction. One hundred micrograms fentanyl, confirmed.",
+   "start": 25.751,
+   "end": 28.863,
+   "words": [
+    {
+     "w": "Correction.",
+     "s": 25.751,
+     "e": 26.366
+    },
+    {
+     "w": "One",
+     "s": 26.575,
+     "e": 26.784
+    },
+    {
+     "w": "hundred",
+     "s": 26.819,
+     "e": 27.051
+    },
+    {
+     "w": "micrograms",
+     "s": 27.086,
+     "e": 27.632
+    },
+    {
+     "w": "fentanyl,",
+     "s": 27.678,
+     "e": 28.096
+    },
+    {
+     "w": "confirmed.",
+     "s": 28.119,
+     "e": 28.862
+    }
+   ]
+  },
+  {
+   "id": "L4",
+   "role": "surgeon",
+   "gap": 5,
+   "text": "Give 2 grams of cefazolin.",
+   "say": "Give two grams of cefazolin.",
+   "start": 33.863,
+   "end": 35.72,
+   "words": [
+    {
+     "w": "Give",
+     "s": 33.863,
+     "e": 34.107
+    },
+    {
+     "w": "two",
+     "s": 34.142,
+     "e": 34.316
+    },
+    {
+     "w": "grams",
+     "s": 34.374,
+     "e": 34.664
+    },
+    {
+     "w": "of",
+     "s": 34.699,
+     "e": 34.745
+    },
+    {
+     "w": "cefazolin.",
+     "s": 34.78,
+     "e": 35.721
+    }
+   ]
+  },
+  {
+   "id": "L5",
+   "role": "surgeon",
+   "gap": 24,
+   "text": "Surgr, what is still open?",
+   "say": "Surger, what is still open?",
+   "start": 59.72,
+   "end": 61.485,
+   "words": [
+    {
+     "w": "Surger,",
+     "s": 59.72,
+     "e": 60.208
+    },
+    {
+     "w": "what",
+     "s": 60.231,
+     "e": 60.393
+    },
+    {
+     "w": "is",
+     "s": 60.428,
+     "e": 60.498
+    },
+    {
+     "w": "still",
+     "s": 60.544,
+     "e": 60.8
+    },
+    {
+     "w": "open?",
+     "s": 60.869,
+     "e": 61.485
+    }
+   ]
+  },
+  {
+   "id": "L6",
+   "role": "anesthesia",
+   "gap": 12,
+   "text": "Sorry. 2 grams cefazolin, confirmed.",
+   "say": "Sorry. Two grams cefazolin, confirmed.",
+   "start": 73.485,
+   "end": 76.271,
+   "words": [
+    {
+     "w": "Sorry.",
+     "s": 73.485,
+     "e": 74.031
+    },
+    {
+     "w": "Two",
+     "s": 74.356,
+     "e": 74.518
+    },
+    {
+     "w": "grams",
+     "s": 74.576,
+     "e": 74.925
+    },
+    {
+     "w": "cefazolin,",
+     "s": 74.948,
+     "e": 75.575
+    },
+    {
+     "w": "confirmed.",
+     "s": 75.61,
+     "e": 76.271
+    }
+   ]
+  },
+  {
+   "id": "L7",
+   "role": "nurse",
+   "gap": 5,
+   "text": "Time out. Patient is John Doe, procedure is right knee arthroscopy, site is marked.",
+   "say": "Time out. Patient is John Doe, procedure is right knee arthroscopy, site is marked.",
+   "start": 81.271,
+   "end": 86.658,
+   "words": [
+    {
+     "w": "Time",
+     "s": 81.271,
+     "e": 81.608
+    },
+    {
+     "w": "out.",
+     "s": 81.643,
+     "e": 82.002
+    },
+    {
+     "w": "Patient",
+     "s": 82.246,
+     "e": 82.629
+    },
+    {
+     "w": "is",
+     "s": 82.664,
+     "e": 82.745
+    },
+    {
+     "w": "John",
+     "s": 82.804,
+     "e": 83.001
+    },
+    {
+     "w": "Doe,",
+     "s": 83.059,
+     "e": 83.407
+    },
+    {
+     "w": "procedure",
+     "s": 83.535,
+     "e": 84.034
+    },
+    {
+     "w": "is",
+     "s": 84.069,
+     "e": 84.139
+    },
+    {
+     "w": "right",
+     "s": 84.208,
+     "e": 84.394
+    },
+    {
+     "w": "knee",
+     "s": 84.417,
+     "e": 84.568
+    },
+    {
+     "w": "arthroscopy,",
+     "s": 84.603,
+     "e": 85.346
+    },
+    {
+     "w": "site",
+     "s": 85.497,
+     "e": 85.799
+    },
+    {
+     "w": "is",
+     "s": 85.834,
+     "e": 85.915
+    },
+    {
+     "w": "marked.",
+     "s": 85.973,
+     "e": 86.658
+    }
+   ]
+  },
+  {
+   "id": "L8",
+   "role": "surgeon",
+   "gap": 3,
+   "text": "Great. Knife please.",
+   "say": "Great. Knife, please.",
+   "start": 89.658,
+   "end": 91.237,
+   "words": [
+    {
+     "w": "Great.",
+     "s": 89.658,
+     "e": 90.041
+    },
+    {
+     "w": "Knife,",
+     "s": 90.099,
+     "e": 90.436
+    },
+    {
+     "w": "please.",
+     "s": 90.471,
+     "e": 91.237
+    }
+   ]
+  }
+ ]
+}
