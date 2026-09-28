@@ -303,8 +303,8 @@ export function SiteFooter() {
         </div>
 
         <div>
-          <div className="font-mono text-[11px] uppercase tracking-[0.28em] text-white/50">On this page</div>
-          <ul className="mt-6 space-y-4 font-body text-base text-white/85">
+          <div className="font-body text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">On this page</div>
+          <ul className="mt-4 space-y-2 font-body text-[15px] font-light leading-snug text-white/85">
             {ON_THIS_PAGE.map((l) => (
               <li key={l.href}>
                 <a href={l.href} className="transition-colors hover:text-white">
@@ -316,8 +316,8 @@ export function SiteFooter() {
         </div>
 
         <div>
-          <div className="font-mono text-[11px] uppercase tracking-[0.28em] text-white/50">Surgr</div>
-          <ul className="mt-6 space-y-4 font-body text-base text-white/85">
+          <div className="font-body text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">Surgr</div>
+          <ul className="mt-4 space-y-2 font-body text-[15px] font-light leading-snug text-white/85">
             <li>
               <Link href="/app" className="transition-colors hover:text-white">
                 Launch app
