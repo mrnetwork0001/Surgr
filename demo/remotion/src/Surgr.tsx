@@ -387,8 +387,8 @@ const Record: React.FC = () => {
           <Chip tone="plain" delay={cueIn(9, 'every')} size={20}>Every order, read-back and alert · timestamped</Chip>
           <div style={{ display: 'flex', gap: 10 }}>
             <Chip tone="teal" delay={tPdf} size={20}>PDF</Chip>
-            <Chip tone="blue" delay={cueIn(9, 'telegram')} size={20}>Telegram</Chip>
-            <Chip tone="nurse" delay={cueIn(9, 'debrief')} size={20}>Spoken debrief</Chip>
+            <Chip tone="blue" delay={Math.max(cueIn(9, 'telegram'), tPdf + 6)} size={20}>Telegram</Chip>
+            <Chip tone="nurse" delay={Math.max(cueIn(9, 'debrief'), tPdf + 12)} size={20}>Spoken debrief</Chip>
           </div>
         </Stack>
       </Side>
