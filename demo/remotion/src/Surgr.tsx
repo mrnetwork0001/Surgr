@@ -289,7 +289,7 @@ const LiveScene: React.FC<{ beat: Beat }> = ({ beat }) => {
         <BrowserFrame width={1560} enter={false} shots={shots} focus={focus} title={`Surgr · ${beat.eyebrow}`} badge={<LiveBadge />}
           overlay={note && (
             <div style={{ position: 'absolute', left: 22, bottom: 20 }}>
-              <Chip tone="plain" mono size={15} delay={note.at} out={note.at + 60}>{`${note.gap.toFixed(1)} s of waiting on the network trimmed`}</Chip>
+              <Chip tone="plain" mono size={15} delay={note.at} out={note.at + 60}>{`${note.gap.toFixed(1)} s ${beat.skip ?? 'of waiting on the network trimmed'}`}</Chip>
             </div>
           )} />
       </div>
@@ -371,10 +371,11 @@ const Checklist: React.FC = () => (
 
 const Record: React.FC = () => {
   const f = useCurrentFrame()
-  const rate = 1.3
+  const rate = 1.5
   const start = REPORT_BEAT.start
   const sceneT = (clipT: number) => (clipT - start) / rate + LEAD / FPS
-  const tPdf = cueIn(9, 'pdf')
+  // The PDF appears when the page confirms it was saved, never before the click that saves it.
+  const tPdf = Math.max(cueIn(9, 'pdf'), Math.round(sceneT(REPORT_BEAT.toastAt) * FPS))
   const pdfIn = easeOut(interpolate(f, [tPdf, tPdf + 20], [0, 1], CLAMP))
   return (
     <>

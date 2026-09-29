@@ -66,7 +66,8 @@ const centerY = (r: Rect) => r[1] + r[3] / 2
 export const FULL: Rect = [0, 0, 1600, 900]
 
 export type Range = [number, number]
-export type Beat = { eyebrow: string; segs: Range[]; mic: Range[]; agent: Range[]; focus: Focus[] }
+/** `skip` names what a cut in this beat removed, shown on screen; the default is network waiting. */
+export type Beat = { eyebrow: string; segs: Range[]; mic: Range[]; agent: Range[]; focus: Focus[]; skip?: string }
 
 /** Joins windows whose gap is too short to be worth a cut. */
 const merge = (segs: Range[], minGap = 1.4): Range[] => {
@@ -105,7 +106,9 @@ export const BEAT_A: Beat = {
 }
 export const BEAT_B: Beat = {
   eyebrow: '02 · No read-back',
-  segs: merge([[L4.s - 0.8, L4.e + 0.8], [T4 - 0.8, A2.end + 0.6]]),
+  // The middle of the ten-second countdown is skipped, and the cut says so on screen.
+  segs: merge([[L4.s - 0.8, Math.max(T4 + 1.5, L4.e + 3.0)], [A2.start - 3.0, A2.end + 0.6]]),
+  skip: 'of the ten-second countdown skipped',
   mic: [[L4.s - 0.3, L4.e + 0.3]],
   agent: [[A2.start - 0.1, A2.end + 0.1]],
   focus: [
@@ -128,7 +131,7 @@ export const BEAT_C: Beat = {
 const timeOut = snapAt(LIVE, T7 + 0.4).phases.find((p) => /time out/i.test(p.name))?.rect ?? [1137, 432, 433, 284]
 export const BEAT_D: Beat = {
   eyebrow: '04 · WHO checklist',
-  segs: merge([[Math.min(T6 - 0.5, L7.s - 0.8), T8 + 1.4], [A4.start - 0.7, A4.end + 0.8]]),
+  segs: merge([[L7.s - 0.8, T8 + 1.4], [A4.start - 0.7, A4.end + 0.8]]),
   mic: [[L7.s - 0.3, L8.e + 0.3]],
   agent: [[A4.start - 0.1, A4.end + 0.1]],
   focus: [

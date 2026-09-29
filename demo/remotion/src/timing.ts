@@ -33,7 +33,7 @@ export const cueIn = (vo: number, word: string, n = 0) => {
 
 export type SceneDef = { id: string; vo?: number; tail?: number; beat?: Beat }
 export const SCENES: SceneDef[] = [
-  { id: 'title', vo: 0, tail: 1.3 },
+  { id: 'title', vo: 0, tail: 1.0 },
   { id: 'problem', vo: 1, tail: 1.0 },
   { id: 'stakes', vo: 2, tail: 0.8 },
   { id: 'solution', vo: 3, tail: 1.0 },
@@ -46,10 +46,10 @@ export const SCENES: SceneDef[] = [
   { id: 'liveC', beat: BEAT_C },
   { id: 'checklist', vo: 8, tail: 0.5 },
   { id: 'liveD', beat: BEAT_D },
-  { id: 'record', vo: 9, tail: 0.9 },
+  { id: 'record', vo: 9, tail: 2.4 },
   { id: 'stack', vo: 10, tail: 0.9 },
   { id: 'business', vo: 11, tail: 0.9 },
-  { id: 'close', vo: 12, tail: 3.2 },
+  { id: 'close', vo: 12, tail: 2.6 },
 ]
 export const segFrames = (s: [number, number]) => Math.round((s[1] - s[0]) * FPS)
 export const beatDur = (b: Beat) => LIVE_LEAD + b.segs.reduce((n, s) => n + segFrames(s), 0) + LIVE_TAIL

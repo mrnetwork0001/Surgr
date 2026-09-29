@@ -13,17 +13,17 @@ const VOICE = process.env.NARRATOR_VOICE || 'XrExE9yKIg1WjnnlVkGX'
 // "W H O" makes the voice spell the organisation instead of saying "who".
 const SECTIONS = [
   ['00', "Surger. Every verbal order in the operating room, verified out loud."],
-  ['01', "In an operating room, drugs are ordered by voice. The surgeon asks for one hundred micrograms of fentanyl. Anesthesia hears ten. The rule is to read every order back before it is given. But in a loud room, under pressure, the read-back gets skipped, or misheard. And nothing beeps."],
-  ['02', "About one in twenty medication administrations in surgery involves an error. Roughly two thirds of the serious incidents hospitals report involve a breakdown in communication. Aviation made read-backs mandatory decades ago. Operating rooms still run on memory."],
-  ['03', "Surger listens to the room. Every order gets ten seconds to be read back. It checks the drug, the dose, the unit and the route. And the moment a loop does not close, it says so, out loud."],
-  ['04', "This is the Surger cockpit, listening to a live microphone. The surgeon and anesthesia are two synthetic voices in the room. Watch the dose."],
-  ['05', "Speaker labels told the two voices apart on one microphone. Surger compared the dose, not the words, and only a correct read-back closed the loop."],
+  ['01', "In surgery, drugs are ordered by voice. The surgeon asks for one hundred micrograms of fentanyl. Anesthesia hears ten. The rule is to read it back. But under pressure, it gets skipped, or misheard. And nothing beeps."],
+  ['02', "About one in twenty surgical medication doses involves an error. Two thirds of serious incidents involve a communication breakdown. Aviation made read-backs mandatory. Operating rooms still run on memory."],
+  ['03', "Surger listens to the room. Each order gets ten seconds to be read back. It checks drug, dose, unit and route. And the moment a loop stays open, it says so, out loud."],
+  ['04', "Here is Surger, listening to a live microphone. Two synthetic clinician voices. Watch the dose."],
+  ['05', "Speaker labels told the voices apart. Surger compared the dose, and only a correct read-back closed the loop."],
   ['06', "Now, an order that nobody answers."],
-  ['07', "Ten seconds, then Surger calls it. The room can also ask it questions, by name. The Voice Agent answers from live state, through tool calls."],
+  ['07', "Ten seconds, and Surger calls it. The room can ask it questions too, answered through tool calls."],
   ['08', "The W H O surgical safety checklist is heard the same way. End a Time Out with items missing, and Surger lists them."],
-  ['09', "When the case ends, the record is already written. Every order, read-back and alert, linked to the second it happened. Download it as a PDF, send it to Telegram, or have Surger read the debrief aloud."],
-  ['10', "Under the hood, it is four AssemblyAI products in one loop. Streaming speech-to-text in medical mode, with speaker labels. The LLM Gateway, for anything the rules cannot settle. And the Voice Agent API, as Surger's voice in the room. Every integration was verified against the live services."],
-  ['11', "The anesthesiologist gets a second check before the syringe goes in. Quality teams get closed-loop data for every room. Surger starts where no clearance is needed, in simulation labs and residency training. Then silent analytics. Then live intervention, after validation. Priced per operating room."],
+  ['09', "When the case ends, the record is already written. Every order and alert, timestamped. Download a PDF, send it to Telegram, or hear the debrief."],
+  ['10', "Under the hood, four AssemblyAI products in one loop. Streaming in medical mode, speaker labels, the LLM Gateway, and the Voice Agent API. Every integration verified against the live services."],
+  ['11', "The anesthesiologist gets a second check before the dose goes in. Quality teams get closed-loop data for every room. Surger starts in simulation labs, then silent analytics, then live intervention. Priced per operating room."],
   ['12', "Aviation cockpits have mandatory read-backs, and a voice recorder. Operating rooms have neither. Surger gives them both."],
 ]
 
