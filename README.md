@@ -9,6 +9,12 @@
 </p>
 
 <p align="center">
+  <a href="https://trysurgr.vercel.app"><b>Live demo</b></a> ·
+  <a href="https://trysurgr.vercel.app/app">Open the cockpit</a> ·
+  <a href="deck/surgr-deck.pdf">Pitch deck</a>
+</p>
+
+<p align="center">
   <a href="#try-it-in-sixty-seconds">Try it</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#built-on-assemblyai">Built on AssemblyAI</a> ·
@@ -19,7 +25,7 @@
 
 ![Surgr cockpit flagging a read-back dose mismatch](public/screenshots/cockpit-v3.png)
 
-Built for the [AssemblyAI Voice Agent Hackathon](https://lablab.ai/ai-hackathons/assemblyai-voice-agent-hackathon) on lablab.ai, September 2026. Source: [github.com/mrnetwork0001/Surgr](https://github.com/mrnetwork0001/Surgr).
+Built for the [AssemblyAI Voice Agent Hackathon](https://lablab.ai/ai-hackathons/assemblyai-voice-agent-hackathon) on lablab.ai, September 2026. Live at [trysurgr.vercel.app](https://trysurgr.vercel.app). Source: [github.com/mrnetwork0001/Surgr](https://github.com/mrnetwork0001/Surgr).
 
 > Surgr is a working prototype, not a medical device. It does not replace clinical judgement or institutional safety protocols. See [Limitations](#limitations).
 
@@ -72,7 +78,7 @@ Nothing in the room beeps when a read-back does not happen. Surgr is the thing t
 
 ## Try it in sixty seconds
 
-1. Open the app and click **Launch app** (the cockpit lives at `/app`). Turn your sound on.
+1. Open [trysurgr.vercel.app/app](https://trysurgr.vercel.app/app) in Chrome or Edge and turn your sound on.
 2. In the **OR audio simulator** at the bottom, play **Dose mismatch**. Watch the fentanyl order go red on the order board and hear Surgr speak the alert. The correction that follows turns it green.
 3. Play **Rushed Time Out** to hear a checklist alert, or **Full case** at 4× for a three-minute procedure end to end.
 4. Click **Export EHR report**. Follow a timestamp back into the transcript, download the PDF, or press **Spoken debrief**.
@@ -118,7 +124,7 @@ Every integration has been verified against the live services with the scripts i
 
 ## Getting started
 
-Requirements: Node.js 20 or newer, an [AssemblyAI API key](https://www.assemblyai.com/dashboard), and Chrome or Edge for the live microphone.
+Requirements: Node.js 20.9 or newer, an [AssemblyAI API key](https://www.assemblyai.com/dashboard), and Chrome or Edge for the live microphone.
 
 ```bash
 git clone https://github.com/mrnetwork0001/Surgr.git
@@ -216,8 +222,9 @@ src/
     MobileDrawer.tsx         small-screen drawer
     TranscriptFeed.tsx · OrderBoard.tsx · ChecklistPanel.tsx · AlertBanner.tsx
     Simulator.tsx            scenario player and free-text injection
+    AskCard.tsx              what Surgr heard and answered when asked a question
     ReportModal.tsx · DeliverBar.tsx
-    landing/                 Hero, Capabilities, InfoSections, LoopDemo, ORBackdrop, BlurText, FadingVideo
+    landing/                 Hero, Capabilities, InfoSections, LoopDemo, ORBackdrop, BlurText, FadingVideo, Reveal
   hooks/
     useSurgr.ts              orchestrator: classification pipeline, simulator, alerts, report
     useStreaming.ts          microphone → AudioWorklet → AssemblyAI Streaming v3
@@ -227,6 +234,9 @@ src/
     classifier.ts            rule-based utterance classifier
     checklist.ts             WHO checklist items and phase detection
     readback.ts              read-back state machine and alerts (pure reducer)
+    keyterms.ts              drug names and checklist phrases sent as streaming keyterms
+    agentTools.ts            the six JSON-schema tools the Voice Agent can call
+    audio.ts · types.ts      audio helpers and shared types
     scenarios.ts             simulator scripts
     report.ts · reportPdf.ts · debrief.ts
     llm.server.ts            LLM Gateway client with fallback, prompt-schema mode and budget
@@ -236,6 +246,8 @@ public/
   audio/rehearsal-two-voices.m4a
   brand/ · screenshots/ · og.png
 scripts/                     verification scripts (see below)
+deck/                        pitch deck: HTML source, PDF and editable PowerPoint
+demo/remotion/               the demo film: Remotion scenes, ElevenLabs voice scripts, Playwright capture
 ```
 
 ## API routes
@@ -267,9 +279,9 @@ The live scripts need `ASSEMBLYAI_API_KEY` in `.env.local`. The rehearsal audio,
 
 ## Deployment
 
-Surgr is a standard Next.js application and deploys to Vercel without configuration.
+Surgr is a standard Next.js application and deploys to Vercel without configuration. The public deployment is [trysurgr.vercel.app](https://trysurgr.vercel.app).
 
-1. Import the repository and set `ASSEMBLYAI_API_KEY` in the project's environment variables. Add `TELEGRAM_BOT_TOKEN` and `RESEND_API_KEY` if you use those channels, and `NEXT_PUBLIC_SITE_URL` to your public origin for link previews.
+1. Import the repository and set `ASSEMBLYAI_API_KEY` in the project's environment variables. Add `TELEGRAM_BOT_TOKEN` and `RESEND_API_KEY` if you use those channels, and `NEXT_PUBLIC_SITE_URL` to your public origin for link previews. Variables starting with `NEXT_PUBLIC_` are read at build time, so redeploy after changing them.
 2. Deploy. The report route declares a 30-second function duration for the narrative call; everything else is fast.
 3. The browser talks to AssemblyAI directly for audio, so no server WebSockets or media servers are involved.
 
